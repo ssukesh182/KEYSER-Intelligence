@@ -85,3 +85,75 @@ def collect_reddit_signals_task(self, competitor_id: int):
             raise self.retry(exc=e)
         except self.MaxRetriesExceededError:
             return {"status": "failed", "error": str(e)}
+
+
+@celery.task(bind=True, name="tasks.collect_hiring_signals", max_retries=2)
+def collect_hiring_signals_task(self, competitor_id: int):
+    """
+    Celery task: Fetch hiring signals from Apollo, Apify LinkedIn, and ArbeitNow
+    for a given competitor → upsert into hiring_signals table.
+    Gracefully skips sources that fail (no API key, rate-limit, etc.).
+    """
+    print(f"[HIRING_TASK] collect_hiring_signals started for competitor_id={competitor_id}")
+    try:
+        # ── Fix: dispose stale connections inherited from the forked parent ──
+        db.engine.dispose()
+
+        from models.competitor    import Competitor
+
+        from models.hiring_signal import HiringSignal
+        from integrations.jobs    import (
+            fetch_apollo_signals,
+            fetch_linkedin_signals,
+            fetch_arbeitnow_signals,
+        )
+
+        competitor = db.session.query(Competitor).get(competitor_id)
+        if not competitor:
+            print(f"[HIRING_TASK] Competitor {competitor_id} not found")
+            return {"status": "error"}
+
+        all_signals = []
+        for fetcher in [fetch_apollo_signals, fetch_linkedin_signals, fetch_arbeitnow_signals]:
+            try:
+                all_signals.extend(fetcher(competitor.name))
+            except Exception as fetch_err:
+                print(f"[HIRING_TASK] Fetcher {fetcher.__name__} failed: {fetch_err}")
+
+        inserted = 0
+        for sig in all_signals:
+            try:
+                # Upsert: skip if same (competitor, source, role_title, posted_at) exists
+                exists = db.session.query(HiringSignal).filter_by(
+                    competitor_id=competitor_id,
+                    source=sig["source"],
+                    role_title=sig["role_title"],
+                    posted_at=sig.get("posted_at"),
+                ).first()
+                if not exists:
+                    row = HiringSignal(
+                        competitor_id=competitor_id,
+                        source=sig["source"],
+                        role_title=sig["role_title"],
+                        department=sig.get("department"),
+                        location=sig.get("location"),
+                        job_url=sig.get("job_url"),
+                        posted_at=sig.get("posted_at"),
+                    )
+                    db.session.add(row)
+                    inserted += 1
+            except Exception as row_err:
+                print(f"[HIRING_TASK] Row insert error: {row_err}")
+
+        db.session.commit()
+        print(f"[HIRING_TASK] Done — {inserted} new signals for {competitor.name}")
+        return {"status": "ok", "inserted": inserted, "total_fetched": len(all_signals)}
+
+    except Exception as e:
+        print(f"[HIRING_TASK] ERROR: {e}")
+        db.session.rollback()
+        try:
+            raise self.retry(exc=e)
+        except self.MaxRetriesExceededError:
+            return {"status": "failed", "error": str(e)}
+

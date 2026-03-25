@@ -74,4 +74,22 @@ def register_jobs(scheduler, app):
             print(f"[SCHEDULER] ERROR in reddit_job: {e}")
 
     print("[SCHEDULER] All jobs registered ✅")
-    print(f"[SCHEDULER] Scrape interval: {SCRAPE_INTERVAL_MINUTES} min | Tavily: 2h | Reddit: 2h")
+    print(f"[SCHEDULER] Scrape interval: {SCRAPE_INTERVAL_MINUTES} min | Tavily: 2h | Reddit: 2h | Hiring: 6h")
+
+
+    # ── Job 4: Collect hiring signals every 6 hours ───────────
+    @scheduler.scheduled_job("interval", hours=6, id="hiring_signals", jitter=600)
+    def hiring_signals_job():
+        print("[SCHEDULER] Triggering hiring signal collection")
+        try:
+            from workers.intelligence_tasks import collect_hiring_signals_task
+            with app.app_context():
+                from extensions import db
+                from models import Competitor
+                competitors = db.session.query(Competitor).all()
+                for c in competitors:
+                    collect_hiring_signals_task.delay(c.id)
+                    print(f"[SCHEDULER] Hiring task queued for: {c.name}")
+        except Exception as e:
+            print(f"[SCHEDULER] ERROR in hiring_signals_job: {e}")
+

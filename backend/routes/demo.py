@@ -12,19 +12,12 @@ def reset_demo():
     Wipes all runtime data and re-runs the seed.
     Call this before every demo to guarantee a clean state.
     """
-    print("[DEMO] /api/demo/reset called — wiping and re-seeding DB")
+    print("[DEMO] /api/demo/reset called — performing HARD RESET (drop/create tables)")
     try:
-        # Delete in reverse dependency order
-        db.session.query(InsightSource).delete()
-        db.session.query(ValidationLog).delete()
-        db.session.query(ConfidenceScore).delete()
-        db.session.query(Insight).delete()
-        db.session.query(Diff).delete()
-        db.session.query(Snapshot).delete()
-        db.session.query(Source).delete()
-        db.session.query(Competitor).delete()
-        db.session.commit()
-        print("[DEMO] All tables wiped")
+        # Drop and recreate all tables to sync schema
+        db.drop_all()
+        db.create_all()
+        print("[DEMO] All tables dropped and recreated")
 
         # Re-run seed
         from seed.seed import run_seed

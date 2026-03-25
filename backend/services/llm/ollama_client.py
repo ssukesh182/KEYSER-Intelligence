@@ -4,7 +4,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 class OllamaClient:
-    def __init__(self, base_url="http://localhost:11434", model="gemma3:4b"):
+    def __init__(self, base_url="http://localhost:11434", model="gemma:2b"):
         self.base_url = base_url
         self.model = model
 

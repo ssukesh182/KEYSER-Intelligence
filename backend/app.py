@@ -44,6 +44,7 @@ def create_app():
     from routes.whitespace  import bp as whitespace_bp
     from routes.copilot     import bp as copilot_bp
     from routes.source_reviews import bp as source_reviews_bp
+    from routes.hiring      import bp as hiring_bp
 
     app.register_blueprint(competitors_bp)
     app.register_blueprint(snapshots_bp)
@@ -55,11 +56,12 @@ def create_app():
     app.register_blueprint(whitespace_bp)
     app.register_blueprint(copilot_bp)
     app.register_blueprint(source_reviews_bp)
+    app.register_blueprint(hiring_bp)
 
     # Initialize APScheduler (runs exactly once)
     if not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
         init_scheduler(app)
-    print("[APP] All 10 blueprints registered")
+    print("[APP] All 11 blueprints registered")
 
     # ── Create DB tables ──────────────────────────────────────
     with app.app_context():

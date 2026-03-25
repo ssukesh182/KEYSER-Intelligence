@@ -184,6 +184,7 @@ def run_seed(session):
                     category      = change_type,
                     action        = tmpl[2],
                     confidence    = scores["confidence"],
+                    urgency       = 1, # Default for seeded insights
                     novelty       = scores["novelty"],
                     relevance     = scores["relevance"],
                     frequency     = 1,
@@ -206,6 +207,97 @@ def run_seed(session):
     session.commit()
     print("[SEED] ✅ Seed complete — 3 competitors, 6 sources, 18 snapshots, 12 diffs, 12 insights")
 
+    # Also seed hiring signals
+    seed_hiring_signals(session)
+
+
+def seed_hiring_signals(session):
+    """
+    Idempotent: inserts ~36 realistic job postings across 3 competitors.
+    Represents 8 weeks of hiring activity spread realistically.
+    Runs after run_seed so competitor IDs are known.
+    """
+    from models.competitor    import Competitor
+    from models.hiring_signal import HiringSignal
+
+    if session.query(HiringSignal).count() > 0:
+        print("[SEED] Hiring signals already exist — skipping")
+        return
+
+    competitors = {c.name: c for c in session.query(Competitor).all()}
+    if not competitors:
+        print("[SEED] No competitors found — skipping hiring seed")
+        return
+
+    now = datetime.now(timezone.utc)
+
+    # fmt: off
+    SIGNALS = [
+        # ── Zepto ──────────────────────────────────────────────────────────────
+        ("Zepto", "Senior ML Engineer – Recommendations",      "Engineering", "Bengaluru",  3,  "linkedin"),
+        ("Zepto", "Staff Backend Engineer – Order Platform",   "Engineering", "Bengaluru",  5,  "linkedin"),
+        ("Zepto", "SDE-2 Android (Zepto SuperSaver)",         "Engineering", "Mumbai",     8,  "arbeitnow"),
+        ("Zepto", "Data Engineer – Real-Time Pipelines",       "Engineering", "Remote",     12, "arbeitnow"),
+        ("Zepto", "Principal Product Manager – Growth",        "Product",     "Bengaluru",  2,  "apollo"),
+        ("Zepto", "Senior Product Manager – Checkout UX",      "Product",     "Mumbai",     6,  "linkedin"),
+        ("Zepto", "VP of Marketing – Brand & Performance",     "Marketing",   "Mumbai",     4,  "apollo"),
+        ("Zepto", "Performance Marketing Manager",             "Marketing",   "Bengaluru",  9,  "arbeitnow"),
+        ("Zepto", "Head of Dark Store Operations – North",     "Operations",  "Delhi NCR",  1,  "linkedin"),
+        ("Zepto", "City Operations Manager – Hyderabad",       "Operations",  "Hyderabad",  15, "arbeitnow"),
+        ("Zepto", "Supply Chain Analyst – Demand Forecasting", "Operations",  "Bengaluru",  7,  "apollo"),
+        ("Zepto", "Senior UX Designer – Consumer App",         "Design",      "Remote",     20, "linkedin"),
+
+        # ── Blinkit ────────────────────────────────────────────────────────────
+        ("Blinkit", "Engineering Manager – Platform",          "Engineering", "Gurugram",   2,  "linkedin"),
+        ("Blinkit", "SDE-3 Backend – Catalog Service",         "Engineering", "Gurugram",   4,  "arbeitnow"),
+        ("Blinkit", "Senior iOS Engineer",                     "Engineering", "Bengaluru",  6,  "linkedin"),
+        ("Blinkit", "ML Engineer – Search Relevance",          "Engineering", "Delhi",      10, "arbeitnow"),
+        ("Blinkit", "Senior Product Manager – Pharmacy",       "Product",     "Gurugram",   3,  "apollo"),
+        ("Blinkit", "Product Manager – B2B Marketplace",       "Product",     "Mumbai",     14, "linkedin"),
+        ("Blinkit", "Category Manager – Fresh Produce",        "Operations",  "Gurugram",   5,  "apollo"),
+        ("Blinkit", "Regional Operations Manager – South",     "Operations",  "Chennai",    8,  "arbeitnow"),
+        ("Blinkit", "Head of Growth Marketing",                "Marketing",   "Gurugram",   1,  "apollo"),
+        ("Blinkit", "Brand Manager – Quick Commerce",          "Marketing",   "Mumbai",     18, "linkedin"),
+        ("Blinkit", "Finance Analyst – Unit Economics",        "Finance",     "Gurugram",   11, "arbeitnow"),
+        ("Blinkit", "Talent Acquisition Lead",                 "People",      "Gurugram",   22, "linkedin"),
+
+        # ── Swiggy Instamart ────────────────────────────────────────────────────
+        ("Swiggy Instamart", "Senior Data Scientist – Personalization","Engineering","Bengaluru",  3, "linkedin"),
+        ("Swiggy Instamart", "SDE-2 Full Stack – Instamart",           "Engineering","Bengaluru",  7, "arbeitnow"),
+        ("Swiggy Instamart", "DevOps Engineer – Kubernetes",           "Engineering","Remote",     13, "arbeitnow"),
+        ("Swiggy Instamart", "Technical Program Manager – Scaling",    "Product",    "Bengaluru",  2, "apollo"),
+        ("Swiggy Instamart", "Senior PM – Instamart Advertising",      "Product",    "Mumbai",     9, "linkedin"),
+        ("Swiggy Instamart", "Head of Category – FMCG",                "Operations", "Bengaluru",  4, "apollo"),
+        ("Swiggy Instamart", "Operations Analytics Manager",           "Operations", "Bengaluru",  6, "arbeitnow"),
+        ("Swiggy Instamart", "Associate Director – User Growth",       "Marketing",  "Bengaluru",  1, "apollo"),
+        ("Swiggy Instamart", "Content & Social Media Manager",         "Marketing",  "Mumbai",     16, "linkedin"),
+        ("Swiggy Instamart", "Senior Accountant – Revenue Ops",        "Finance",    "Bengaluru",  19, "arbeitnow"),
+        ("Swiggy Instamart", "Recruitment Manager – Tech Hiring",      "People",     "Bengaluru",  10, "linkedin"),
+        ("Swiggy Instamart", "Legal Counsel – Regulatory Affairs",     "Legal",      "Bengaluru",  25, "arbeitnow"),
+    ]
+    # fmt: on
+
+    inserted = 0
+    for comp_name, role, dept, loc, days_ago, source in SIGNALS:
+        comp = competitors.get(comp_name)
+        if not comp:
+            continue
+        posted = now - timedelta(days=days_ago)
+        row = HiringSignal(
+            competitor_id=comp.id,
+            source=source,
+            role_title=role,
+            department=dept,
+            location=loc,
+            posted_at=posted,
+            fetched_at=now,
+        )
+        session.add(row)
+        inserted += 1
+
+    session.commit()
+    print(f"[SEED] ✅ Hiring signals seeded — {inserted} rows across {len(competitors)} competitors")
+
 
 if __name__ == "__main__":
     # Run standalone: python seed/seed.py
@@ -219,3 +311,4 @@ if __name__ == "__main__":
     with app.app_context():
         print("[SEED] Running standalone seed")
         run_seed(_db.session)
+

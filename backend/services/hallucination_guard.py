@@ -75,6 +75,6 @@ def check_hallucination(claim: str, supporting_text: str, extra_context: str = "
     return False
 
 
-def is_hallucination(claim: str, supporting_text: str) -> bool:
+def is_hallucination(claim: str, supporting_text: str, extra_context: str = "") -> bool:
     """Inverse of check_hallucination — returns True when claim IS a hallucination."""
-    return not check_hallucination(claim, supporting_text)
+    return not check_hallucination(claim, supporting_text, extra_context)
