@@ -9,3 +9,5 @@ playwright==1.44.0
 apscheduler==3.10.4
 requests==2.32.3
 lxml==5.2.2
+markdown==3.6
+pdfkit==1.0.0

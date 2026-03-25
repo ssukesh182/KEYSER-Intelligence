@@ -39,6 +39,8 @@ def create_app():
     from routes.insights    import bp as insights_bp
     from routes.health      import bp as health_bp
     from routes.demo        import bp as demo_bp
+    from routes.brief       import bp as brief_bp
+    from routes.whitespace  import bp as whitespace_bp
 
     app.register_blueprint(competitors_bp)
     app.register_blueprint(snapshots_bp)
@@ -46,7 +48,9 @@ def create_app():
     app.register_blueprint(insights_bp)
     app.register_blueprint(health_bp)
     app.register_blueprint(demo_bp)
-    print("[APP] All 6 blueprints registered")
+    app.register_blueprint(brief_bp)
+    app.register_blueprint(whitespace_bp)
+    print("[APP] All 8 blueprints registered")
 
     # ── Create DB tables ──────────────────────────────────────
     with app.app_context():
