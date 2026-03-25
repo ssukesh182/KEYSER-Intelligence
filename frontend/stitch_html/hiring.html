@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Hiring Intelligence | KEYSER Intelligence</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-secondary-fixed": "#191c1e",
+              "on-tertiary-fixed": "#241a00",
+              "surface-container-highest": "#d9e2ff",
+              "surface-bright": "#faf8ff",
+              "surface-tint": "#535e7b",
+              "error-container": "#ffdad6",
+              "outline": "#76777e",
+              "secondary-fixed-dim": "#c5c7c8",
+              "on-primary": "#ffffff",
+              "on-tertiary-container": "#4f3d00",
+              "on-primary-fixed": "#0f1b34",
+              "surface-dim": "#cfd9fb",
+              "inverse-on-surface": "#eef0ff",
+              "outline-variant": "#c6c6ce",
+              "on-primary-fixed-variant": "#3b4662",
+              "secondary-container": "#dee0e2",
+              "on-surface-variant": "#45464d",
+              "on-tertiary-fixed-variant": "#584400",
+              "on-error": "#ffffff",
+              "error": "#ba1a1a",
+              "on-secondary": "#ffffff",
+              "background": "#faf8ff",
+              "tertiary-fixed": "#ffe08e",
+              "on-background": "#0f1b34",
+              "surface-container-high": "#e1e7ff",
+              "inverse-surface": "#25304a",
+              "primary-fixed-dim": "#bbc6e7",
+              "on-tertiary": "#ffffff",
+              "primary": "#09152e",
+              "on-surface": "#0f1b34",
+              "on-primary-container": "#8691b0",
+              "secondary": "#5c5f60",
+              "tertiary-container": "#cea62c",
+              "surface-container-low": "#f2f3ff",
+              "primary-container": "#1f2a44",
+              "tertiary": "#755b00",
+              "secondary-fixed": "#e1e2e4",
+              "primary-fixed": "#d9e2ff",
+              "on-error-container": "#93000a",
+              "surface-variant": "#d9e2ff",
+              "surface-container": "#e9edff",
+              "tertiary-fixed-dim": "#ecc246",
+              "on-secondary-container": "#606365",
+              "surface-container-lowest": "#ffffff",
+              "inverse-primary": "#bbc6e7",
+              "surface": "#faf8ff",
+              "on-secondary-fixed-variant": "#444749"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1.5rem", "3xl": "2rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      body { font-family: 'Inter', sans-serif; }
+      h1, h2, h3 { font-family: 'Manrope', sans-serif; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface min-h-screen">
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full z-50 flex justify-between items-center px-8 h-20 bg-white/80 dark:bg-[#09152e]/80 backdrop-blur-xl border-b-0">
+<div class="flex items-center gap-12">
+<span class="text-xl font-black text-[#09152e] dark:text-[#faf8ff] uppercase tracking-widest font-['Manrope']">KEYSER Intelligence</span>
+<div class="hidden md:flex items-center gap-6 text-sm font-['Manrope'] font-bold tracking-tight">
+<a class="text-[#1F2A44]/70 dark:text-[#faf8ff]/70 hover:text-[#09152e] dark:hover:text-[#ffffff] transition-colors duration-300" href="#">Zepto</a>
+<a class="text-[#1F2A44]/70 dark:text-[#faf8ff]/70 hover:text-[#09152e] dark:hover:text-[#ffffff] transition-colors duration-300" href="#">Swiggy</a>
+<a class="text-[#1F2A44]/70 dark:text-[#faf8ff]/70 hover:text-[#09152e] dark:hover:text-[#ffffff] transition-colors duration-300" href="#">Blinkit</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2 bg-surface-container-low px-4 py-2 rounded-xl">
+<span class="material-symbols-outlined text-sm opacity-50">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-48" placeholder="Search signals..." type="text"/>
+</div>
+<button class="bg-primary text-on-primary px-6 py-2.5 rounded-xl font-bold text-sm hover:bg-primary-container transition-colors duration-300 scale-95 active:opacity-80 transition-transform">Refresh Data</button>
+<div class="flex items-center gap-2 border-l border-outline-variant pl-4 ml-2">
+<button class="p-2 hover:bg-[#f2f3ff] dark:hover:bg-[#1F2A44] transition-colors rounded-lg"><span class="material-symbols-outlined">filter_alt</span></button>
+<button class="p-2 hover:bg-[#f2f3ff] dark:hover:bg-[#1F2A44] transition-colors rounded-lg"><span class="material-symbols-outlined">history</span></button>
+</div>
+</div>
+</nav>
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-0 h-screen w-72 flex flex-col p-6 bg-[#f2f3ff] dark:bg-[#09152e] border-r border-[#09152e]/5 z-40 pt-24">
+<div class="mb-10 px-2">
+<h2 class="text-[#09152e] dark:text-[#ffe08e] text-sm font-medium tracking-wide font-['Inter'] uppercase opacity-60">Intelligence</h2>
+<p class="text-xs text-[#09152e] dark:text-[#ffe08e] font-bold">Sovereign Framework</p>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 text-[#1F2A44]/60 dark:text-[#faf8ff]/50 hover:bg-white/50 dark:hover:bg-[#1F2A44]/30 rounded-xl transition-all duration-300 hover:translate-x-1 font-['Inter'] text-sm font-medium" href="#">
+<span class="material-symbols-outlined">dashboard</span> Overview
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#1F2A44]/60 dark:text-[#faf8ff]/50 hover:bg-white/50 dark:hover:bg-[#1F2A44]/30 rounded-xl transition-all duration-300 hover:translate-x-1 font-['Inter'] text-sm font-medium" href="#">
+<span class="material-symbols-outlined">update</span> Website Changes
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#1F2A44]/60 dark:text-[#faf8ff]/50 hover:bg-white/50 dark:hover:bg-[#1F2A44]/30 rounded-xl transition-all duration-300 hover:translate-x-1 font-['Inter'] text-sm font-medium" href="#">
+<span class="material-symbols-outlined">ads_click</span> Google Ads
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#1F2A44]/60 dark:text-[#faf8ff]/50 hover:bg-white/50 dark:hover:bg-[#1F2A44]/30 rounded-xl transition-all duration-300 hover:translate-x-1 font-['Inter'] text-sm font-medium" href="#">
+<span class="material-symbols-outlined">rate_review</span> App Reviews
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 bg-white dark:bg-[#1F2A44] text-[#09152e] dark:text-[#ffe08e] rounded-xl shadow-sm transition-all duration-300 hover:translate-x-1 font-['Inter'] text-sm font-medium" href="#">
+<span class="material-symbols-outlined">person_search</span> Hiring Tracker
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#1F2A44]/60 dark:text-[#faf8ff]/50 hover:bg-white/50 dark:hover:bg-[#1F2A44]/30 rounded-xl transition-all duration-300 hover:translate-x-1 font-['Inter'] text-sm font-medium" href="#">
+<span class="material-symbols-outlined">radar</span> Whitespace Radar
+            </a>
+</nav>
+<div class="mt-auto space-y-1 border-t border-outline-variant/20 pt-6">
+<button class="w-full flex items-center justify-center gap-2 bg-primary-container text-tertiary-fixed py-3 rounded-xl mb-4 font-bold text-sm shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-sm">bolt</span> AI Co-Pilot
+            </button>
+<a class="flex items-center gap-3 px-4 py-2 text-[#1F2A44]/60 dark:text-[#faf8ff]/50 hover:bg-white/50 rounded-lg text-sm" href="#"><span class="material-symbols-outlined">settings</span> Settings</a>
+<a class="flex items-center gap-3 px-4 py-2 text-[#1F2A44]/60 dark:text-[#faf8ff]/50 hover:bg-white/50 rounded-lg text-sm" href="#"><span class="material-symbols-outlined">help_outline</span> Support</a>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-72 pt-28 px-12 pb-12 min-h-screen">
+<!-- Header & Stats Header -->
+<header class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+<div>
+<h1 class="text-5xl font-extrabold tracking-tight text-primary mb-2">Hiring Intelligence</h1>
+<p class="text-on-surface-variant font-body max-w-xl leading-relaxed">Cross-platform recruitment analytics monitoring the expansion velocity and talent acquisition strategies of top-tier competitors.</p>
+</div>
+<div class="flex gap-4">
+<div class="bg-surface-container-low p-6 rounded-2xl flex flex-col items-center justify-center min-w-[140px]">
+<span class="text-xs uppercase tracking-widest font-bold opacity-40 mb-1">Active Posts</span>
+<span class="text-3xl font-black text-primary">1,284</span>
+</div>
+<div class="bg-surface-container-low p-6 rounded-2xl flex flex-col items-center justify-center min-w-[140px]">
+<span class="text-xs uppercase tracking-widest font-bold opacity-40 mb-1">Growth %</span>
+<span class="text-3xl font-black text-tertiary-container">+14.2%</span>
+</div>
+</div>
+</header>
+<!-- Bento Grid Section -->
+<div class="grid grid-cols-12 gap-6 mb-12">
+<!-- Hiring Activity Timeline (Main Bar Chart) -->
+<div class="col-span-12 lg:col-span-8 bg-surface-container-lowest rounded-3xl p-8 shadow-sm">
+<div class="flex items-center justify-between mb-8">
+<div>
+<h3 class="text-xl font-bold text-primary">Hiring Activity Timeline</h3>
+<p class="text-sm text-on-surface-variant">Weekly job posting volume across identified competitors</p>
+</div>
+<div class="flex gap-2">
+<span class="inline-flex items-center px-3 py-1 bg-surface-container-low text-xs font-bold rounded-full">Weekly</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer">more_horiz</span>
+</div>
+</div>
+<div class="h-64 flex items-end justify-between gap-3 px-2">
+<!-- Placeholder Bars -->
+<div class="flex-1 bg-primary/10 rounded-t-lg h-32 hover:bg-primary transition-colors cursor-help group relative">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-primary text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">84</div>
+</div>
+<div class="flex-1 bg-primary/20 rounded-t-lg h-44 hover:bg-primary transition-colors cursor-help group relative">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-primary text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">112</div>
+</div>
+<div class="flex-1 bg-primary/15 rounded-t-lg h-36 hover:bg-primary transition-colors cursor-help group relative">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-primary text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">96</div>
+</div>
+<div class="flex-1 bg-primary/40 rounded-t-lg h-56 hover:bg-primary transition-colors cursor-help group relative">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-primary text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">145</div>
+</div>
+<div class="flex-1 bg-primary/30 rounded-t-lg h-48 hover:bg-primary transition-colors cursor-help group relative">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-primary text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">128</div>
+</div>
+<div class="flex-1 bg-primary/50 rounded-t-lg h-60 hover:bg-primary transition-colors cursor-help group relative">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-primary text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">156</div>
+</div>
+<div class="flex-1 bg-primary rounded-t-lg h-full cursor-help group relative">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-primary text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">214</div>
+</div>
+<div class="flex-1 bg-primary/60 rounded-t-lg h-52 hover:bg-primary transition-colors cursor-help group relative">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-primary text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">136</div>
+</div>
+<div class="flex-1 bg-primary/40 rounded-t-lg h-40 hover:bg-primary transition-colors cursor-help group relative">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-primary text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">108</div>
+</div>
+</div>
+<div class="flex justify-between mt-4 px-2 text-[10px] uppercase tracking-widest font-bold text-on-surface-variant opacity-60">
+<span>Oct 01</span>
+<span>Oct 15</span>
+<span>Oct 31</span>
+<span>Nov 15</span>
+<span>Nov 30</span>
+</div>
+</div>
+<!-- Job Category Distribution (Donut Chart) -->
+<div class="col-span-12 lg:col-span-4 bg-surface-container-lowest rounded-3xl p-8 shadow-sm">
+<h3 class="text-xl font-bold text-primary mb-1">Talent Allocation</h3>
+<p class="text-sm text-on-surface-variant mb-8">Role distribution by department</p>
+<div class="relative flex justify-center items-center mb-8">
+<!-- SVG Donut Chart Placeholder -->
+<svg class="w-48 h-48 transform -rotate-90">
+<circle cx="96" cy="96" fill="none" r="80" stroke="#f2f3ff" stroke-width="24"></circle>
+<circle class="transition-all duration-1000" cx="96" cy="96" fill="none" r="80" stroke="#C9A227" stroke-dasharray="240 502" stroke-width="24"></circle>
+<circle cx="96" cy="96" fill="none" r="80" stroke="#09152e" stroke-dasharray="140 502" stroke-dashoffset="-240" stroke-width="24"></circle>
+<circle cx="96" cy="96" fill="none" r="80" stroke="#1F2A44" stroke-dasharray="122 502" stroke-dashoffset="-380" stroke-width="24"></circle>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span class="text-sm uppercase font-bold opacity-40">Top</span>
+<span class="text-2xl font-black text-tertiary-container">ENG</span>
+</div>
+</div>
+<div class="space-y-4">
+<div class="flex items-center justify-between group cursor-default">
+<div class="flex items-center gap-3">
+<div class="w-3 h-3 rounded-full bg-tertiary-container"></div>
+<span class="text-sm font-medium">Engineering</span>
+</div>
+<span class="text-sm font-bold">48%</span>
+</div>
+<div class="flex items-center justify-between group cursor-default">
+<div class="flex items-center gap-3">
+<div class="w-3 h-3 rounded-full bg-primary"></div>
+<span class="text-sm font-medium">Operations</span>
+</div>
+<span class="text-sm font-bold">28%</span>
+</div>
+<div class="flex items-center justify-between group cursor-default">
+<div class="flex items-center gap-3">
+<div class="w-3 h-3 rounded-full bg-primary-container"></div>
+<span class="text-sm font-medium">Product</span>
+</div>
+<span class="text-sm font-bold">24%</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Recent Job Posts Table Section -->
+<section class="bg-surface-container-lowest rounded-3xl shadow-sm overflow-hidden">
+<div class="px-8 py-6 border-b border-surface-container-low flex justify-between items-center bg-white">
+<h3 class="text-xl font-bold text-primary">Live Talent Influx</h3>
+<div class="flex gap-4">
+<button class="flex items-center gap-2 text-xs font-bold uppercase tracking-widest px-4 py-2 bg-surface-container-low rounded-xl hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-sm">download</span> Export
+                    </button>
+<button class="flex items-center gap-2 text-xs font-bold uppercase tracking-widest px-4 py-2 bg-primary text-white rounded-xl">
+<span class="material-symbols-outlined text-sm">filter_list</span> Advanced Filters
+                    </button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead class="bg-surface-container-low/50">
+<tr>
+<th class="px-8 py-5 text-[10px] uppercase tracking-[0.15em] font-black text-on-surface-variant opacity-60">Competitor</th>
+<th class="px-8 py-5 text-[10px] uppercase tracking-[0.15em] font-black text-on-surface-variant opacity-60">Role Title</th>
+<th class="px-8 py-5 text-[10px] uppercase tracking-[0.15em] font-black text-on-surface-variant opacity-60">Department</th>
+<th class="px-8 py-5 text-[10px] uppercase tracking-[0.15em] font-black text-on-surface-variant opacity-60">Location</th>
+<th class="px-8 py-5 text-[10px] uppercase tracking-[0.15em] font-black text-on-surface-variant opacity-60">Posted</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-container-low">
+<tr class="hover:bg-surface-container-low/30 transition-colors">
+<td class="px-8 py-5">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center font-bold text-primary text-xs">Z</div>
+<span class="font-bold text-sm">Zepto</span>
+</div>
+</td>
+<td class="px-8 py-5 font-medium text-sm">Staff Software Engineer (L5)</td>
+<td class="px-8 py-5">
+<span class="px-3 py-1 bg-tertiary-fixed text-on-tertiary-fixed text-[10px] font-bold uppercase rounded-full tracking-wider">Engineering</span>
+</td>
+<td class="px-8 py-5 text-sm text-on-surface-variant">Bengaluru, KA</td>
+<td class="px-8 py-5 text-sm font-medium">2h ago</td>
+</tr>
+<tr class="hover:bg-surface-container-low/30 transition-colors">
+<td class="px-8 py-5">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center font-bold text-primary text-xs">S</div>
+<span class="font-bold text-sm">Swiggy</span>
+</div>
+</td>
+<td class="px-8 py-5 font-medium text-sm">Regional Growth Lead</td>
+<td class="px-8 py-5">
+<span class="px-3 py-1 bg-surface-container-high text-on-primary-fixed text-[10px] font-bold uppercase rounded-full tracking-wider">Operations</span>
+</td>
+<td class="px-8 py-5 text-sm text-on-surface-variant">Mumbai, MH</td>
+<td class="px-8 py-5 text-sm font-medium">5h ago</td>
+</tr>
+<tr class="hover:bg-surface-container-low/30 transition-colors">
+<td class="px-8 py-5">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center font-bold text-primary text-xs">B</div>
+<span class="font-bold text-sm">Blinkit</span>
+</div>
+</td>
+<td class="px-8 py-5 font-medium text-sm">Senior Product Designer</td>
+<td class="px-8 py-5">
+<span class="px-3 py-1 bg-primary-container text-white text-[10px] font-bold uppercase rounded-full tracking-wider">Product</span>
+</td>
+<td class="px-8 py-5 text-sm text-on-surface-variant">Gurugram, HR</td>
+<td class="px-8 py-5 text-sm font-medium">1d ago</td>
+</tr>
+<tr class="hover:bg-surface-container-low/30 transition-colors">
+<td class="px-8 py-5">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center font-bold text-primary text-xs">Z</div>
+<span class="font-bold text-sm">Zepto</span>
+</div>
+</td>
+<td class="px-8 py-5 font-medium text-sm">Director of Supply Chain</td>
+<td class="px-8 py-5">
+<span class="px-3 py-1 bg-surface-container-high text-on-primary-fixed text-[10px] font-bold uppercase rounded-full tracking-wider">Operations</span>
+</td>
+<td class="px-8 py-5 text-sm text-on-surface-variant">Bengaluru, KA</td>
+<td class="px-8 py-5 text-sm font-medium">1d ago</td>
+</tr>
+<tr class="hover:bg-surface-container-low/30 transition-colors">
+<td class="px-8 py-5">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center font-bold text-primary text-xs">S</div>
+<span class="font-bold text-sm">Swiggy</span>
+</div>
+</td>
+<td class="px-8 py-5 font-medium text-sm">Machine Learning Scientist</td>
+<td class="px-8 py-5">
+<span class="px-3 py-1 bg-tertiary-fixed text-on-tertiary-fixed text-[10px] font-bold uppercase rounded-full tracking-wider">Engineering</span>
+</td>
+<td class="px-8 py-5 text-sm text-on-surface-variant">Hyderabad, TS</td>
+<td class="px-8 py-5 text-sm font-medium">2d ago</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="px-8 py-4 bg-surface-container-low/20 flex items-center justify-between">
+<p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Showing 5 of 1,284 tactical acquisitions</p>
+<div class="flex gap-2">
+<button class="p-2 bg-white rounded-lg border border-outline-variant/30 hover:bg-surface-container-low transition-colors"><span class="material-symbols-outlined text-sm">chevron_left</span></button>
+<button class="p-2 bg-white rounded-lg border border-outline-variant/30 hover:bg-surface-container-low transition-colors"><span class="material-symbols-outlined text-sm">chevron_right</span></button>
+</div>
+</div>
+</section>
+<!-- Footer Shell -->
+<footer class="w-full flex justify-between items-center px-0 mt-20 border-t border-[#09152e]/5 py-8">
+<div class="flex items-center gap-6">
+<span class="font-bold text-[#C9A227] font-['Inter'] text-[10px] uppercase tracking-[0.1em]">SNUC Hacks '26</span>
+<div class="h-4 w-[1px] bg-outline-variant/30"></div>
+<p class="text-slate-400 font-['Inter'] text-[10px] uppercase tracking-[0.1em]">Intelligence Sovereign Dashboard v2.4.0</p>
+</div>
+<div class="flex gap-8">
+<a class="text-slate-400 font-['Inter'] text-[10px] uppercase tracking-[0.1em] hover:text-[#C9A227] transition-colors" href="#">Privacy Policy</a>
+<a class="text-slate-400 font-['Inter'] text-[10px] uppercase tracking-[0.1em] hover:text-[#C9A227] transition-colors" href="#">Terms of Intelligence</a>
+<a class="text-slate-400 font-['Inter'] text-[10px] uppercase tracking-[0.1em] hover:text-[#C9A227] transition-colors" href="#">Institutional Access</a>
+</div>
+</footer>
+</main>
+<!-- Floating Strategic Panel (AI Intelligence Overlay) -->
+<div class="fixed bottom-8 right-8 z-50">
+<button class="group relative flex items-center justify-center w-16 h-16 bg-primary rounded-full shadow-2xl hover:scale-110 transition-transform cursor-pointer">
+<span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1;">psychology</span>
+<div class="absolute right-20 bg-white shadow-xl rounded-2xl p-4 w-64 opacity-0 group-hover:opacity-100 translate-x-4 group-hover:translate-x-0 transition-all pointer-events-none">
+<p class="text-xs font-bold text-tertiary-container uppercase tracking-widest mb-2">Strategy Pulse</p>
+<p class="text-sm font-medium leading-tight text-primary">Zepto is ramping up Engineering hiring by 40% vs last week. Potential focus on automated logistics tech.</p>
+</div>
+</button>
+</div>
+</body></html>
