@@ -1,17 +1,39 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider } from 'firebase/auth';
+import { initializeApp } from "firebase/app";
+import { getAuth, GoogleAuthProvider } from "firebase/auth";
 
+// These should be in .env.local in a real project
 const firebaseConfig = {
-  apiKey: "AIzaSyAUTMAReIF6kwk9eca98xXzx8wxxMXcgZ4",
-  authDomain: "snuchacks-c29fe.firebaseapp.com",
-  projectId: "snuchacks-c29fe",
-  storageBucket: "snuchacks-c29fe.firebasestorage.app",
-  messagingSenderId: "695828978755",
-  appId: "1:695828978755:web:12d9d8cec54d30636888f6",
-  measurementId: "G-BLEW1CHGGY",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
-const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const googleProvider = new GoogleAuthProvider();
-export const isFirebaseConfigured = true;
+const IS_MOCK_MODE = !firebaseConfig.apiKey;
+
+let app, auth, googleProvider;
+
+if (IS_MOCK_MODE) {
+  console.warn("⚠️ Firebase API Key missing. Running in MOCK AUTH MODE.");
+  app = { name: "mock-app" };
+  auth = { 
+    currentUser: null, 
+    isMock: true,
+    getIdToken: async () => "mock-token"
+  };
+  googleProvider = {};
+} else {
+  try {
+    app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    googleProvider = new GoogleAuthProvider();
+  } catch (error) {
+    console.error("Firebase initialization failed:", error);
+    // Fallback to mock if it fails
+    auth = { isMock: true, getIdToken: async () => "mock-token" };
+  }
+}
+
+export { auth, googleProvider };

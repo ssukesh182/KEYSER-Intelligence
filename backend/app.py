@@ -29,7 +29,12 @@ def create_app():
 
     # ── Extensions ────────────────────────────────────────────
     db.init_app(app)
-    cors.init_app(app, resources={r"/api/*": {"origins": "*"}})
+    # Enable permissive CORS for all routes to resolve port 5176 issues
+    cors.init_app(app, resources={r"/*": {
+        "origins": "*",
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"]
+    }})
     print("[APP] Extensions initialised (db, cors)")
 
     # ── Blueprints ────────────────────────────────────────────
@@ -45,6 +50,8 @@ def create_app():
     from routes.copilot     import bp as copilot_bp
     from routes.source_reviews import bp as source_reviews_bp
     from routes.hiring      import bp as hiring_bp
+    from routes.users       import bp as users_bp
+    from routes.ads         import bp as ads_bp
 
     app.register_blueprint(competitors_bp)
     app.register_blueprint(snapshots_bp)
@@ -57,6 +64,8 @@ def create_app():
     app.register_blueprint(copilot_bp)
     app.register_blueprint(source_reviews_bp)
     app.register_blueprint(hiring_bp)
+    app.register_blueprint(users_bp)
+    app.register_blueprint(ads_bp)
 
     # Initialize APScheduler (runs exactly once)
     if not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true":

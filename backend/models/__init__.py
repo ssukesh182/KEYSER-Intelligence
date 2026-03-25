@@ -7,6 +7,8 @@ from .insight_source import InsightSource
 from .confidence_score import ConfidenceScore
 from .validation_log import ValidationLog
 from .hiring_signal  import HiringSignal
+from .user           import User, UserCompetitor
+from .review         import RawReview
 
 __all__ = [
     "Competitor",
@@ -18,6 +20,9 @@ __all__ = [
     "ConfidenceScore",
     "ValidationLog",
     "HiringSignal",
+    "User",
+    "UserCompetitor",
+    "RawReview",
 ]
 
 print("[MODELS] All 7 models imported successfully")

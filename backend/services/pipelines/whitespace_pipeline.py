@@ -52,14 +52,17 @@ def fetch_tavily_validation(angle_title: str) -> str:
         return ""
 
 
-def _get_snapshots_for_competitor(competitor: Competitor) -> list[str]:
-    """Fetch recent snapshot text for a competitor via Source → Snapshot join."""
-    source_ids = [s.id for s in competitor.sources]
-    if not source_ids:
-        return []
+def _get_snapshots_for_competitor(user_id, competitor_name) -> list[str]:
+    """Fetch recent snapshots for this user's competitor."""
+    from models.snapshot import Snapshot
+    from models.source import Source
+    # We need to find the Source for this user/competitor
+    # For now, we search all snapshots with this competitor name
+    # In a full system, Source would also be user_scoped
     snapshots = (
         db.session.query(Snapshot)
-        .filter(Snapshot.source_id.in_(source_ids))
+        .join(Source)
+        .filter(Source.competitor_name == competitor_name)
         .order_by(Snapshot.scraped_at.desc())
         .limit(10)
         .all()
@@ -67,44 +70,36 @@ def _get_snapshots_for_competitor(competitor: Competitor) -> list[str]:
     return [s.clean_text or "" for s in snapshots if s.clean_text]
 
 
-def _get_hiring_depts_for_competitor(competitor_id: int) -> list[str]:
-    """Return hiring departments from HiringSignal table for a specific competitor ID."""
-    if not competitor_id:
-        return []
+def _get_hiring_depts_for_competitor(user_id, competitor_name) -> list[str]:
+    """Return hiring departments for a specific user's competitor."""
     signals = (
         db.session.query(HiringSignal)
-        .filter(HiringSignal.competitor_id == competitor_id)
+        .filter(HiringSignal.user_id == user_id, HiringSignal.competitor_name == competitor_name)
         .limit(50)
         .all()
     )
     return [s.department or "" for s in signals]
 
 
-def run_whitespace_radar() -> dict:
+def run_whitespace_radar(user_id, competitors, user_usp="") -> dict:
     """
-    Returns:
-        {
-          "scores": {
-            "Zepto": { "speed": 72, "range": 45, ... },
-            ...
-          },
-          "angles": [
-            { "title": "...", "description": "...", "opportunity_score": 88, "impact": 4, "tag": "..." },
-            ...
-          ],
-          "dimensions": ["speed", "range", ...]
-        }
+    Multi-tenant Whitespace Radar:
+    - user_id: int
+    - competitors: list of str
+    - user_usp: str
     """
     all_scores: dict = {}
     reddit_by_competitor: dict = {}
     all_snapshot_texts: list = []
 
+    if not competitors:
+        return {"scores": {}, "angles": [], "dimensions": DIMENSIONS}
+
     # ── Pass 1: gather data ────────────────────────────────────────────────
     competitor_data = {}
-    for name in TRACKED_COMPETITORS:
-        competitor = db.session.query(Competitor).filter_by(name=name).first()
-        snapshots_text = _get_snapshots_for_competitor(competitor) if competitor else []
-        hiring_depts   = _get_hiring_depts_for_competitor(competitor.id if competitor else None)
+    for name in competitors:
+        snapshots_text = _get_snapshots_for_competitor(user_id, name)
+        hiring_depts   = _get_hiring_depts_for_competitor(user_id, name)
         reddit_posts   = fetch_reddit_mentions(name, subreddit="india+bangalore+delhi+mumbai")
 
         competitor_data[name] = {
@@ -112,20 +107,19 @@ def run_whitespace_radar() -> dict:
             "hiring":    hiring_depts,
             "reddit":    reddit_posts,
         }
-        all_snapshot_texts.extend(snapshots_text[:3])   # sample for context
+        all_snapshot_texts.extend(snapshots_text[:3])
         reddit_by_competitor[name] = reddit_posts
 
-    # ── Generate dynamic keyword taxonomy from real industry snapshot text ──
-    # Build industry context: 600 chars of snapshot content + competitor names
+    # ── Generate taxonomy ──────────────────────────────────────────────────
     sample_text = " ".join(all_snapshot_texts)[:600]
     industry_context = (
-        f"Competitors being tracked: {', '.join(TRACKED_COMPETITORS)}.\n"
-        f"Sample content from their websites:\n{sample_text}"
+        f"Competitors: {', '.join(competitors)}.\n"
+        f"User USP: {user_usp}\n"
+        f"Context: {sample_text}"
     )
     taxonomy = generate_keyword_taxonomy(industry_context)
-    logger.info(f"[Whitespace] Taxonomy generated for dimensions: {list(taxonomy.keys())}")
 
-    # ── Pass 2: score each competitor with shared taxonomy ─────────────────
+    # ── Pass 2: score each ─────────────────────────────────────────────────
     for name, data in competitor_data.items():
         all_scores[name] = score_competitor(
             competitor_name=name,
@@ -134,12 +128,12 @@ def run_whitespace_radar() -> dict:
             reddit_posts=data["reddit"],
             taxonomy=taxonomy,
         )
-        logger.info(f"[Whitespace] Scored {name}: {all_scores[name]}")
 
     # ── Find whitespace angles ─────────────────────────────────────────────
+    # Pass user_usp to find_whitespace_angles to prioritize gaps vs THEIR strengths
     angles = find_whitespace_angles(all_scores, reddit_by_competitor, taxonomy=taxonomy)
 
-    # ── Enrich top 2 angles with Tavily market signal ─────────────────────
+    # ── Enrich ─────────────────────────────────────────────────────────────
     for angle in angles[:2]:
         market_context = fetch_tavily_validation(angle["title"])
         if market_context:

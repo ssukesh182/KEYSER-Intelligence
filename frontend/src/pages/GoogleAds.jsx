@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { fetchSerpAds } from '../services/serpAdsService';
+import { useAuth } from '../context/AuthContext';
 
 const HighlightDiff = ({ oldText, newText }) => {
   if (!oldText || oldText === newText) return <span>{newText}</span>;
@@ -8,7 +9,6 @@ const HighlightDiff = ({ oldText, newText }) => {
   return (
     <>
       {newWords.map((word, i) => {
-        // Simple positional diffing for demonstration
         const isChanged = i >= oldWords.length || oldWords[i] !== word;
         return isChanged ? (
           <span key={i} className="bg-tertiary-container/30 text-primary font-bold px-1 rounded mx-0.5">
@@ -23,39 +23,34 @@ const HighlightDiff = ({ oldText, newText }) => {
 };
 
 export default function GoogleAds() {
+  const { currentUser, profile } = useAuth();
   const [ads, setAds] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
   const [fetchHistory, setFetchHistory] = useState([]);
   const [selectedCompetitor, setSelectedCompetitor] = useState("All Competitors");
   
-  // Previous snapshot of ads to compare against
   const previousSnapshotsRef = useRef({});
   const [selectedAd, setSelectedAd] = useState(null);
 
-  const loadAds = async (competitorFilter) => {
+  const loadAds = async () => {
+    if (!currentUser) return;
     setIsLoading(true);
     setError(false);
     try {
-      const results = await fetchSerpAds(competitorFilter);
-      if (!results || results.length === 0) {
-        setError(true);
-      } else {
-        // Store current ads into previous snapshot ref before updating
-        if (ads.length > 0) {
-          const snapshotMap = {};
-          ads.forEach(ad => { snapshotMap[ad.competitor] = ad; });
-          previousSnapshotsRef.current = snapshotMap;
-        }
-
-        setAds(results);
-        
-        // Update fetch history for Trend Chart
-        setFetchHistory(prev => {
-          const newHistory = [...prev, { time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), count: results.length }];
-          return newHistory.slice(-5); // Keep last 5 queries
-        });
+      const token = await currentUser.getIdToken();
+      const results = await fetchSerpAds(token);
+      
+      let filtered = results;
+      if (selectedCompetitor !== "All Competitors") {
+        filtered = results.filter(ad => ad.competitor === selectedCompetitor);
       }
+      
+      setAds(filtered);
+      setFetchHistory(prev => {
+        const newHistory = [...prev, { time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), count: filtered.length }];
+        return newHistory.slice(-5);
+      });
     } catch (err) {
       console.error(err);
       setError(true);
@@ -65,20 +60,14 @@ export default function GoogleAds() {
   };
 
   useEffect(() => {
-    // Initial fetch when selected competitor changes
-    loadAds(selectedCompetitor);
-
-    // Auto-refresh every 10 minutes (600,000 ms) based on current filter
-    const interval = setInterval(() => {
-      loadAds(selectedCompetitor);
-    }, 600000);
-
-    return () => clearInterval(interval);
-  }, [selectedCompetitor]);
+    loadAds();
+  }, [selectedCompetitor, currentUser]);
 
   const openComparisonModal = (ad) => {
     setSelectedAd(ad);
   };
+
+  const trackedCompetitors = profile?.tracked_competitors || [];
 
   return (
     <div className="p-12 max-w-[1400px] mx-auto w-full relative">
@@ -88,7 +77,7 @@ export default function GoogleAds() {
             Ad Intelligence <span className="text-tertiary-container">Sovereign Feed</span>
           </h1>
           <p className="text-lg text-primary/60 max-w-lg leading-relaxed">
-            Real-time monitoring of competitor creative strategies and algorithmic positioning across the digital ecosystem.
+            Real-time monitoring of {profile?.company_name || 'your'}'s competitor creative strategies and positioning.
           </p>
         </div>
         <div className="flex gap-4 items-center self-start md:self-end">
@@ -99,9 +88,9 @@ export default function GoogleAds() {
               className="appearance-none bg-surface-container-low border-0 rounded-xl px-6 py-3 pr-12 font-headline font-bold text-sm text-primary focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
             >
               <option>All Competitors</option>
-              <option>Zepto</option>
-              <option>Swiggy</option>
-              <option>Blinkit</option>
+              {trackedCompetitors.map(c => (
+                <option key={c.name} value={c.name}>{c.name}</option>
+              ))}
             </select>
             <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-primary/40">expand_more</span>
           </div>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import AuthPage from './pages/AuthPage';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import LandingPage from './pages/LandingPage';
+import OnboardingFlow from './pages/OnboardingFlow';
 import Dashboard from './pages/Dashboard';
 import WebsiteChanges from './pages/WebsiteChanges';
 import GoogleAds from './pages/GoogleAds';
@@ -11,30 +12,32 @@ import Settings from './pages/Settings';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 
-function App() {
-  const [currentPage, setCurrentPage] = useState('landing');
+function AppContent() {
+  const { currentUser, profile, loading, login, logout } = useAuth();
+  const [currentPage, setCurrentPage] = useState('dashboard');
   const [timeWindow, setTimeWindow] = useState('7d');
   const [sortBy, setSortBy] = useState('latest');
 
-  // Auth page — no sidebar/header
-  if (currentPage === 'auth') {
+  if (loading) {
     return (
-      <div className="bg-background font-body text-on-surface flex flex-col min-h-screen">
-        <AuthPage onLogin={() => setCurrentPage('dashboard')} />
+      <div className="min-h-screen bg-surface flex flex-col items-center justify-center">
+        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
+        <span className="text-sm font-bold text-primary tracking-widest uppercase">Initializing Intelligence...</span>
       </div>
     );
   }
 
-  // Landing/marketing page — no sidebar
-  if (currentPage === 'landing') {
-    return (
-      <div className="bg-background font-body text-on-surface flex flex-col min-h-screen selection:bg-tertiary-fixed selection:text-on-tertiary-fixed">
-        <LandingPage onEnter={() => setCurrentPage('dashboard')} onNavigate={setCurrentPage} />
-      </div>
-    );
+  // Guest View
+  if (!currentUser) {
+    return <LandingPage onEnter={login} onNavigate={(p) => p === 'auth' ? login() : null} />;
   }
 
-  // Otherwise, render the requested page inside the global Layout wrapper
+  // Onboarding View
+  if (!profile?.profile_complete) {
+    return <OnboardingFlow />;
+  }
+
+  // Authenticated Dashboard View
   const renderInnerPage = () => {
     switch (currentPage) {
       case 'dashboard': return <Dashboard timeWindow={timeWindow} sortBy={sortBy} />;
@@ -43,7 +46,7 @@ function App() {
       case 'app_reviews': return <AppReviews />;
       case 'hiring': return <HiringIntelligence />;
       case 'whitespace': return <WhitespaceRadar />;
-      case 'settings': return <Settings onLogout={() => setCurrentPage('landing')} />;
+      case 'settings': return <Settings onLogout={logout} />;
       default: return <Dashboard timeWindow={timeWindow} sortBy={sortBy} />;
     }
   };
@@ -53,12 +56,19 @@ function App() {
       <Sidebar currentPage={currentPage} onNavigate={setCurrentPage} />
       <div className="ml-72 flex-1 flex flex-col min-h-screen">
         <Header timeWindow={timeWindow} onTimeChange={setTimeWindow} sortBy={sortBy} onSortChange={setSortBy} />
-        {/* Main Content Area */}
         <main className="flex-1 flex flex-col">
           {renderInnerPage()}
         </main>
       </div>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 

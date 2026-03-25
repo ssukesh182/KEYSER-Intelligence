@@ -38,8 +38,8 @@ export default function LandingPage({ onEnter, onNavigate }) {
                     Real-time intelligence across websites, ads, reviews, and hiring signals. Automated collection and synthesis into executive-ready briefs.
                 </p>
 <div className="flex flex-wrap gap-4 mb-12">
-<button onClick={() => onNavigate('auth')} className="bg-primary text-white px-8 py-4 rounded-xl font-bold text-lg hover:shadow-[0_20px_40px_rgba(9,21,46,0.15)] transition-all flex items-center gap-3 active:scale-95">
-                        TRY DEMO INSTANTLY
+<button onClick={onEnter} className="bg-primary text-white px-8 py-4 rounded-xl font-bold text-lg hover:shadow-[0_20px_40px_rgba(9,21,46,0.15)] transition-all flex items-center gap-3 active:scale-95">
+                        GET STARTED NOW
                         <span className="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
 </button>
 <button onClick={() => onNavigate('auth')} className="bg-white text-primary border border-outline-variant px-8 py-4 rounded-xl font-bold text-lg hover:bg-surface-container-low transition-all">

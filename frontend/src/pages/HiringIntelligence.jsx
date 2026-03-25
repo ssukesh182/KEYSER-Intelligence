@@ -1,27 +1,18 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { useAuth } from '../context/AuthContext';
 
-async function apiFetch(path) {
-  const res = await fetch(path);   // relative URL — Vite proxy forwards to :5001
+async function apiFetch(path, token) {
+  const res = await fetch(`http://localhost:5001${path}`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
 
-const DEPT_COLORS = {
-  Engineering:  '#4F63D2',
-  Product:      '#C9A227',
-  Operations:   '#2CA87F',
-  Marketing:    '#E97B3B',
-  Design:       '#A259FF',
-  Finance:      '#3AB5E5',
-  People:       '#E95B8A',
-  Sales:        '#7AC943',
-  Legal:        '#6B7280',
-  Strategy:     '#9CA3AF',
-};
-const SOURCE_LABELS = { linkedin: 'LinkedIn', apollo: 'Apollo.io', arbeitnow: 'ArbeitNow', seed: 'Seeded' };
-const SOURCE_COLORS = { linkedin: '#0A66C2', apollo: '#B44DED', arbeitnow: '#F97316', seed: '#6B7280' };
+// ... constants ...
 
 export default function HiringIntelligence() {
+  const { currentUser } = useAuth();
   const [signals,  setSignals]  = useState([]);
   const [stats,    setStats]    = useState(null);
   const [loading,  setLoading]  = useState(true);
@@ -33,15 +24,17 @@ export default function HiringIntelligence() {
   const PAGE_SIZE = 10;
 
   const fetchData = useCallback(async () => {
+    if (!currentUser) return;
     setLoading(true);
     setError(null);
     try {
+      const token = await currentUser.getIdToken();
       const params = new URLSearchParams({ limit: 500 });
       if (dept) params.set('department', dept);
 
       const [sigRes, statRes] = await Promise.all([
-        apiFetch(`/api/hiring?${params}`),
-        apiFetch('/api/hiring/stats'),
+        apiFetch(`/api/hiring?${params}`, token),
+        apiFetch('/api/hiring/stats', token),
       ]);
       setSignals(sigRes.data || []);
       setStats(statRes.data || null);
@@ -51,15 +44,20 @@ export default function HiringIntelligence() {
     } finally {
       setLoading(false);
     }
-  }, [dept]);
+  }, [dept, currentUser]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleRefresh = async () => {
+    if (!currentUser) return;
     setRefreshing(true);
     try {
-      await fetch('/api/hiring/refresh', { method: 'POST' });
-      setTimeout(fetchData, 1500); // small delay so task can write to DB
+      const token = await currentUser.getIdToken();
+      await fetch('http://localhost:5001/api/hiring/refresh', { 
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      setTimeout(fetchData, 1500);
     } finally {
       setRefreshing(false);
     }

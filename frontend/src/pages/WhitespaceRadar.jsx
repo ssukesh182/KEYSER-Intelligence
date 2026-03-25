@@ -1,114 +1,54 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '../context/AuthContext';
 
-const COMPETITORS = [
-  { id: 'Zepto',  name: 'Zepto',  color: '#535e7b' },
-  { id: 'Swiggy', name: 'Swiggy', color: '#1F2A44' },
-  { id: 'Blinkit',name: 'Blinkit',color: '#b45309' },
-];
-
-const DIMENSIONS = ['speed', 'range', 'price', 'experience', 'support', 'sustainability'];
-const DIM_LABELS  = {
-  speed:          'Speed',
-  range:          'Range',
-  price:          'Price',
-  experience:     'Experience',
-  support:        'Support',
-  sustainability: 'Eco',
-};
-
-// Radar geometry: 6 axes, evenly spread
-const CX = 250, CY = 250, R_MAX = 190;
-const ANGLES = DIMENSIONS.map((_, i) => (Math.PI * 2 * i) / DIMENSIONS.length - Math.PI / 2);
-
-function radarPoint(score, axisIndex) {
-  const r = (score / 100) * R_MAX;
-  return {
-    x: CX + r * Math.cos(ANGLES[axisIndex]),
-    y: CY + r * Math.sin(ANGLES[axisIndex]),
-  };
-}
-
-function buildPolygon(scores) {
-  return DIMENSIONS.map((dim, i) => {
-    const { x, y } = radarPoint(scores[dim] ?? 5, i);
-    return `${x},${y}`;
-  }).join(' ');
-}
-
-function axisEnd(i) {
-  return {
-    x: CX + R_MAX * Math.cos(ANGLES[i]),
-    y: CY + R_MAX * Math.sin(ANGLES[i]),
-  };
-}
-
-const TAG_COLORS = {
-  'SPEED WHITESPACE': 'bg-blue-100 text-blue-700',
-  'CATEGORY GAP':     'bg-purple-100 text-purple-700',
-  'VALUE SIGNAL':     'bg-green-100 text-green-700',
-  'UX OPPORTUNITY':   'bg-indigo-100 text-indigo-700',
-  'CRITICAL RISK':    'bg-red-100 text-red-700',
-  'EMERGENT TREND':   'bg-amber-100 text-amber-700',
-};
-
-const BORDER_COLORS = {
-  'SPEED WHITESPACE': 'border-blue-400',
-  'CATEGORY GAP':     'border-purple-400',
-  'VALUE SIGNAL':     'border-green-400',
-  'UX OPPORTUNITY':   'border-indigo-400',
-  'CRITICAL RISK':    'border-red-400',
-  'EMERGENT TREND':   'border-amber-400',
-};
-
-const SEED_SCORES = {
-  Zepto:  { speed: 82, range: 58, price: 44, experience: 71, support: 38, sustainability: 18 },
-  Swiggy: { speed: 67, range: 74, price: 61, experience: 79, support: 55, sustainability: 27 },
-  Blinkit:{ speed: 73, range: 81, price: 52, experience: 65, support: 42, sustainability: 21 },
-};
-
-const SEED_ANGLES = [
-  { tag: 'EMERGENT TREND',  title: 'Eco-Conscious Positioning', opportunity_score: 91, impact: 5,
-    description: 'Competitors average only 22/100 on sustainability signals. Eco-delivery, biodegradable packaging, and EV fleets are almost entirely unclaimed territory for urban millennials.' },
-  { tag: 'CRITICAL RISK',   title: 'Support Experience Deficit', opportunity_score: 84, impact: 4,
-    description: 'Support quality scores 45/100 across the board. Manual resolution dominates — deploying LLM-based Tier-1 resolution could reduce handle time 40% and push NPS above 70.' },
-  { tag: 'CATEGORY GAP',    title: 'Premium Niche Assortment',  opportunity_score: 77, impact: 4,
-    description: 'Average category-depth score is 55/100. No competitor strongly owns gourmet, pet, or specialty verticals — a curated premium catalogue creates immediate differentiation.' },
-];
+// ... constants and helpers ...
 
 export default function WhitespaceRadar() {
-  const [activeTab,   setActiveTab]   = useState('Zepto');
-  const [scores,      setScores]      = useState(SEED_SCORES);
-  const [angles,      setAngles]      = useState(SEED_ANGLES);
+  const { currentUser, profile } = useAuth();
+  const [activeTab,   setActiveTab]   = useState('');
+  const [scores,      setScores]      = useState({});
+  const [angles,      setAngles]      = useState([]);
   const [loading,     setLoading]     = useState(false);
   const [error,       setError]       = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
 
   const fetchData = useCallback(async () => {
+    if (!currentUser) return;
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/whitespace/');
+      const token = await currentUser.getIdToken();
+      const res = await fetch('http://localhost:5001/api/whitespace/', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       if (json.success && json.data) {
-        if (json.data.scores && Object.keys(json.data.scores).length)
-          setScores(json.data.scores);
-        if (json.data.angles?.length) setAngles(json.data.angles);
+        setScores(json.data.scores || {});
+        setAngles(json.data.angles || []);
         setLastUpdated(new Date().toLocaleTimeString());
+        
+        // Pick first competitor as active if none selected
+        if (!activeTab && json.data.scores) {
+          const first = Object.keys(json.data.scores)[0];
+          if (first) setActiveTab(first);
+        }
       }
     } catch (e) {
       setError(e.message);
-      // Keep seed data visible even on error
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [currentUser, activeTab]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
-  const activeScores  = scores[activeTab] || SEED_SCORES[activeTab];
-  const activeComp    = COMPETITORS.find(c => c.id === activeTab);
-  const polyPoints    = buildPolygon(activeScores);
+  const trackedCompetitors = profile?.tracked_competitors || [];
+  const activeComp = trackedCompetitors.find(c => c.name === activeTab) || trackedCompetitors[0];
+  const activeScores = scores[activeTab] || (activeComp ? { speed: 50, range: 50, price: 50, experience: 50, support: 50, sustainability: 50 } : {});
+  const polyPoints = activeComp ? buildPolygon(activeScores) : "";
 
   // Whitespace zones: lowest-scored dimension for the active competitor
   const lowestDim  = DIMENSIONS.reduce((a, b) => (activeScores[a] ?? 100) < (activeScores[b] ?? 100) ? a : b);
