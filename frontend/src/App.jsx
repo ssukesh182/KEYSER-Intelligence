@@ -7,11 +7,14 @@ import GoogleAds from './pages/GoogleAds';
 import AppReviews from './pages/AppReviews';
 import HiringIntelligence from './pages/HiringIntelligence';
 import WhitespaceRadar from './pages/WhitespaceRadar';
+import Settings from './pages/Settings';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('landing');
+  const [timeWindow, setTimeWindow] = useState('7d');
+  const [sortBy, setSortBy] = useState('latest');
 
   // Auth page — no sidebar/header
   if (currentPage === 'auth') {
@@ -34,13 +37,14 @@ function App() {
   // Otherwise, render the requested page inside the global Layout wrapper
   const renderInnerPage = () => {
     switch (currentPage) {
-      case 'dashboard': return <Dashboard />;
+      case 'dashboard': return <Dashboard timeWindow={timeWindow} sortBy={sortBy} />;
       case 'website_changes': return <WebsiteChanges />;
       case 'google_ads': return <GoogleAds />;
       case 'app_reviews': return <AppReviews />;
       case 'hiring': return <HiringIntelligence />;
       case 'whitespace': return <WhitespaceRadar />;
-      default: return <Dashboard />;
+      case 'settings': return <Settings onLogout={() => setCurrentPage('landing')} />;
+      default: return <Dashboard timeWindow={timeWindow} sortBy={sortBy} />;
     }
   };
 
@@ -48,7 +52,7 @@ function App() {
     <div className="bg-surface font-body text-on-surface antialiased flex min-h-screen">
       <Sidebar currentPage={currentPage} onNavigate={setCurrentPage} />
       <div className="ml-72 flex-1 flex flex-col min-h-screen">
-        <Header />
+        <Header timeWindow={timeWindow} onTimeChange={setTimeWindow} sortBy={sortBy} onSortChange={setSortBy} />
         {/* Main Content Area */}
         <main className="flex-1 flex flex-col">
           {renderInnerPage()}
