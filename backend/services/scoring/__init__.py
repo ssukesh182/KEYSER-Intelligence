@@ -1,0 +1,13 @@
+"""
+services/scoring/__init__.py — re-exports for convenience.
+"""
+from services.scoring.confidence import score_insight_confidence, compute_final_confidence
+from services.scoring.urgency    import score_urgency
+from services.scoring.novelty    import score_novelty
+
+__all__ = [
+    "score_insight_confidence",
+    "compute_final_confidence",
+    "score_urgency",
+    "score_novelty",
+]
