@@ -1,88 +1,110 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { fetchSerpAds } from '../services/serpAdsService';
 
-const COMPETITORS = [
-  { id: 'zepto', name: 'Zepto', tagline: 'Quick commerce leader, 10-min delivery' },
-  { id: 'swiggy', name: 'Swiggy', tagline: 'Food + Instamart dual-vertical powerhouse' },
-  { id: 'blinkit', name: 'Blinkit', tagline: 'Zomato-backed rapid grocery expansion' },
-];
-
-const BASE_DATA = {
-  zepto: {
-    heroTitle: "Zepto Ad Intelligence",
-    heroDesc: "Focusing aggressively on 10-minute delivery guarantees and fresh produce messaging across performance marketing channels.",
-    chartTitle: "Spend Velocity",
-    chartDesc: "Estimated media spend mapped against creative fatigue.",
-    ads: [
-      { id: 1, type: "Performance Max", shift: "New Creative", image: "https://lh3.googleusercontent.com/aida-public/AB6AXuBGnEIRoWusAXJsYVrdF7bBvok6ydExCzlMul8exZZsHQJQS2TDE6xc-4lmDJO1edhbNSyVw0ZlTp0TD0nCUrKfu-Abud3JXq_I4vamVh3UyToXPFNjFSQrX9eH_jQMD4P1LEg0UmpMVcteQZ4zy4F6lQw6xyrXzBuYN61QbncHdKlQ0Tx-0Fl8QDVnN5JmTr_aRjW6VMltzFfhQqFuMVz9vbh_CZS0dN-KxLMUQNveNijxf7r9jgAAi4RUgO-u0RdmZei98ESU0w8f",
-        platform: "Zepto • Instagram Reels", title: "Fresh Fruits, Zero Delivery Fee", 
-        desc: "Aggressive push on organic fresh produce to contrast with competitors. Prominent 'Free Delivery' badge.", 
-        date: "Oct 22, 2023", icon: "shopping_basket", color: "bg-purple-600" },
-      { id: 2, type: "Search", shift: "Keyword Bump", image: "https://lh3.googleusercontent.com/aida-public/AB6AXuDM__1BfKm_92WpCUnGmJTO_x2HZCgsePkbcjoszaKP4biwY2D1SXbFzaCH5CdsSeYewOaeEy146czNBvNHlYEhQamTmdRQEjzlMQ9g2qTzmEuvn1CzYGq4QkhlzFF83F33kjYIFf4-VN7jNumhPpZSFlMslGQf3wRytQixjuhNrRhYT3xdgUBjDB0ht2xfpHyAD8DeqDufNryQmTeg5d5fXRxic7fgZ6Vyh0meq8cqVO4XtjkA-DCvUt2w6gTBZOgI-pjwKtoTa7WS",
-        platform: "Zepto • Google Search", title: "\"Late Night Cravings Delivered\"", 
-        desc: "Bidding heavily on late-night food delivery keywords, expanding beyond traditional grocery scope.", 
-        date: "Oct 20, 2023", icon: "dark_mode", color: "bg-[#09152e]" },
-      { id: 3, type: "Display", shift: "Format Test", image: "https://lh3.googleusercontent.com/aida-public/AB6AXuCBmeHRqbh9t1qeFeCyaneN1ztmhUCVEVNTiOgLSLCquGOJ7JfF4tOJw7ncCKW1qUrz56DPgcs91FTPyKbN99IkXBmIQyn_ReEr2M5K8p5YQFDyPa7LOl5fla6mf_xUH6Ea25NOq72FHdmV_-VQ18qNiFmVibJ4dK-pxQB-2z4DWn48pCKy7fvjuM_tY6PFttU2aU7bYu5JpmBQBxBp4xK4RtVhARlq_vdu0P3scIVshc28ve4lh7J7AWJz_W-Jm3joNQvdzBcJuTqK",
-        platform: "Zepto • UAC", title: "App Install: Play Store Banner", 
-        desc: "Standard app install creative offering flat ₹100 off on first 3 orders to drive new user acquisition.", 
-        date: "Oct 15, 2023", icon: "get_app", color: "bg-tertiary" }
-    ]
-  },
-  swiggy: {
-    heroTitle: "Swiggy Omnichannel Feed",
-    heroDesc: "Real-time monitoring of competitor creative strategies and algorithmic positioning across the digital ecosystem.",
-    chartTitle: "Messaging Frequency",
-    chartDesc: "Aggregated ad impressions vs. creative rotation",
-    ads: [
-      { id: 1, type: "Messaging Shift Detected", shift: "Shift", image: "https://lh3.googleusercontent.com/aida-public/AB6AXuCBmeHRqbh9t1qeFeCyaneN1ztmhUCVEVNTiOgLSLCquGOJ7JfF4tOJw7ncCKW1qUrz56DPgcs91FTPyKbN99IkXBmIQyn_ReEr2M5K8p5YQFDyPa7LOl5fla6mf_xUH6Ea25NOq72FHdmV_-VQ18qNiFmVibJ4dK-pxQB-2z4DWn48pCKy7fvjuM_tY6PFttU2aU7bYu5JpmBQBxBp4xK4RtVhARlq_vdu0P3scIVshc28ve4lh7J7AWJz_W-Jm3joNQvdzBcJuTqK",
-        platform: "Swiggy • YouTube Video", title: "The Ultimate Weekend Feast: Exclusive Member Discounts", 
-        desc: "High-frequency creative targeting premium demographics. Heavy emphasis on 'Exclusive' lifestyle brand positioning.", 
-        date: "Oct 18, 2023", icon: "restaurant", color: "bg-[#FC8019]" },
-      { id: 2, type: "New Format", shift: "Creative", image: "https://lh3.googleusercontent.com/aida-public/AB6AXuDM__1BfKm_92WpCUnGmJTO_x2HZCgsePkbcjoszaKP4biwY2D1SXbFzaCH5CdsSeYewOaeEy146czNBvNHlYEhQamTmdRQEjzlMQ9g2qTzmEuvn1CzYGq4QkhlzFF83F33kjYIFf4-VN7jNumhPpZSFlMslGQf3wRytQixjuhNrRhYT3xdgUBjDB0ht2xfpHyAD8DeqDufNryQmTeg5d5fXRxic7fgZ6Vyh0meq8cqVO4XtjkA-DCvUt2w6gTBZOgI-pjwKtoTa7WS",
-        platform: "Instamart • Google Search", title: "Party Supplies Delivered in 10 Mins", 
-        desc: "Targeting weekend search traffic for party supplies and rapid convenience items over staple groceries.", 
-        date: "Oct 12, 2023", icon: "celebration", color: "bg-[#09152e]" },
-      { id: 3, type: "Price Attack", shift: "Offer", image: "https://lh3.googleusercontent.com/aida-public/AB6AXuBGnEIRoWusAXJsYVrdF7bBvok6ydExCzlMul8exZZsHQJQS2TDE6xc-4lmDJO1edhbNSyVw0ZlTp0TD0nCUrKfu-Abud3JXq_I4vamVh3UyToXPFNjFSQrX9eH_jQMD4P1LEg0UmpMVcteQZ4zy4F6lQw6xyrXzBuYN61QbncHdKlQ0Tx-0Fl8QDVnN5JmTr_aRjW6VMltzFfhQqFuMVz9vbh_CZS0dN-KxLMUQNveNijxf7r9jgAAi4RUgO-u0RdmZei98ESU0w8f",
-        platform: "Swiggy One • Facebook Ads", title: "Unlimited Free Delivery + Extra Discounts", 
-        desc: "Aggressive push on the unified loyalty program, attempting to lock in users across food and grocery segments.", 
-        date: "Oct 05, 2023", icon: "card_membership", color: "bg-error" }
-    ]
-  },
-  blinkit: {
-    heroTitle: "Blinkit Creative Graph",
-    heroDesc: "Tracking Blinkit's transition into diverse retail categories, shifting away from pure utility to impulse purchasing.",
-    chartTitle: "Format Diversification",
-    chartDesc: "Ratio of static banners vs video ad creatives in circulation.",
-    ads: [
-      { id: 1, type: "Messaging Shift Detected", shift: "Shift", image: "https://lh3.googleusercontent.com/aida-public/AB6AXuBGnEIRoWusAXJsYVrdF7bBvok6ydExCzlMul8exZZsHQJQS2TDE6xc-4lmDJO1edhbNSyVw0ZlTp0TD0nCUrKfu-Abud3JXq_I4vamVh3UyToXPFNjFSQrX9eH_jQMD4P1LEg0UmpMVcteQZ4zy4F6lQw6xyrXzBuYN61QbncHdKlQ0Tx-0Fl8QDVnN5JmTr_aRjW6VMltzFfhQqFuMVz9vbh_CZS0dN-KxLMUQNveNijxf7r9jgAAi4RUgO-u0RdmZei98ESU0w8f",
-        platform: "Blinkit • Display Network", title: "Freshness Guaranteed: Farm to Home in Minutes", 
-        desc: "New visual language focused on organic sourcing. Abandoning generic stock imagery for high-resolution farm shots.", 
-        date: "Oct 24, 2023", icon: "eco", color: "bg-[#00FF00]/40 text-black" },
-      { id: 2, type: "Category Expansion", shift: "New Segment", image: "https://lh3.googleusercontent.com/aida-public/AB6AXuDM__1BfKm_92WpCUnGmJTO_x2HZCgsePkbcjoszaKP4biwY2D1SXbFzaCH5CdsSeYewOaeEy146czNBvNHlYEhQamTmdRQEjzlMQ9g2qTzmEuvn1CzYGq4QkhlzFF83F33kjYIFf4-VN7jNumhPpZSFlMslGQf3wRytQixjuhNrRhYT3xdgUBjDB0ht2xfpHyAD8DeqDufNryQmTeg5d5fXRxic7fgZ6Vyh0meq8cqVO4XtjkA-DCvUt2w6gTBZOgI-pjwKtoTa7WS",
-        platform: "Blinkit • Instagram Story", title: "Electronics delivered faster than you can blink", 
-        desc: "Expanding basket size by heavily promoting small electronics (headphones, chargers) via visual-heavy social formats.", 
-        date: "Oct 19, 2023", icon: "headset", color: "bg-amber-500" },
-      { id: 3, type: "Viral Campaign", shift: "Social Push", image: "https://lh3.googleusercontent.com/aida-public/AB6AXuCBmeHRqbh9t1qeFeCyaneN1ztmhUCVEVNTiOgLSLCquGOJ7JfF4tOJw7ncCKW1qUrz56DPgcs91FTPyKbN99IkXBmIQyn_ReEr2M5K8p5YQFDyPa7LOl5fla6mf_xUH6Ea25NOq72FHdmV_-VQ18qNiFmVibJ4dK-pxQB-2z4DWn48pCKy7fvjuM_tY6PFttU2aU7bYu5JpmBQBxBp4xK4RtVhARlq_vdu0P3scIVshc28ve4lh7J7AWJz_W-Jm3joNQvdzBcJuTqK",
-        platform: "Blinkit • Twitter Integration", title: "Print Ad Spin-Off Meme Challenge", 
-        desc: "Leveraging engagement from their offline billboard campaign into a digital UGC meme contest.", 
-        date: "Oct 10, 2023", icon: "tag", color: "bg-blue-400" }
-    ]
-  }
+const HighlightDiff = ({ oldText, newText }) => {
+  if (!oldText || oldText === newText) return <span>{newText}</span>;
+  const oldWords = oldText.split(/\s+/);
+  const newWords = newText.split(/\s+/);
+  return (
+    <>
+      {newWords.map((word, i) => {
+        // Simple positional diffing for demonstration
+        const isChanged = i >= oldWords.length || oldWords[i] !== word;
+        return isChanged ? (
+          <span key={i} className="bg-tertiary-container/30 text-primary font-bold px-1 rounded mx-0.5">
+            {word}
+          </span>
+        ) : (
+          <span key={i} className="mx-0.5">{word}</span>
+        );
+      })}
+    </>
+  );
 };
 
 export default function GoogleAds() {
-  const [activeTab, setActiveTab] = useState('swiggy');
-  const d = COMPETITORS.find(c => c.id === activeTab);
-  const data = BASE_DATA[activeTab];
+  const [ads, setAds] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [fetchHistory, setFetchHistory] = useState([]);
+  const [selectedCompetitor, setSelectedCompetitor] = useState("All Competitors");
+  
+  // Previous snapshot of ads to compare against
+  const previousSnapshotsRef = useRef({});
+  const [selectedAd, setSelectedAd] = useState(null);
+
+  const loadAds = async (competitorFilter) => {
+    setIsLoading(true);
+    setError(false);
+    try {
+      const results = await fetchSerpAds(competitorFilter);
+      if (!results || results.length === 0) {
+        setError(true);
+      } else {
+        // Store current ads into previous snapshot ref before updating
+        if (ads.length > 0) {
+          const snapshotMap = {};
+          ads.forEach(ad => { snapshotMap[ad.competitor] = ad; });
+          previousSnapshotsRef.current = snapshotMap;
+        }
+
+        setAds(results);
+        
+        // Update fetch history for Trend Chart
+        setFetchHistory(prev => {
+          const newHistory = [...prev, { time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), count: results.length }];
+          return newHistory.slice(-5); // Keep last 5 queries
+        });
+      }
+    } catch (err) {
+      console.error(err);
+      setError(true);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // Initial fetch when selected competitor changes
+    loadAds(selectedCompetitor);
+
+    // Auto-refresh every 10 minutes (600,000 ms) based on current filter
+    const interval = setInterval(() => {
+      loadAds(selectedCompetitor);
+    }, 600000);
+
+    return () => clearInterval(interval);
+  }, [selectedCompetitor]);
+
+  const openComparisonModal = (ad) => {
+    setSelectedAd(ad);
+  };
 
   return (
-    <div className="p-12 max-w-[1400px] mx-auto w-full">
-      {/*  Header & Filters  */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-8">
+    <div className="p-12 max-w-[1400px] mx-auto w-full relative">
+      <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-8">
         <div className="max-w-2xl">
-          <h1 className="text-5xl font-headline font-extrabold tracking-tight text-primary mb-4 leading-tight">{data.heroTitle}</h1>
-          <p className="text-lg text-primary/60 max-w-lg leading-relaxed">{data.heroDesc}</p>
+          <h1 className="text-5xl font-headline font-extrabold tracking-tight text-primary mb-4 leading-tight">
+            Ad Intelligence <span className="text-tertiary-container">Sovereign Feed</span>
+          </h1>
+          <p className="text-lg text-primary/60 max-w-lg leading-relaxed">
+            Real-time monitoring of competitor creative strategies and algorithmic positioning across the digital ecosystem.
+          </p>
         </div>
         <div className="flex gap-4 items-center self-start md:self-end">
+          <div className="relative">
+            <select 
+              value={selectedCompetitor}
+              onChange={(e) => setSelectedCompetitor(e.target.value)}
+              className="appearance-none bg-surface-container-low border-0 rounded-xl px-6 py-3 pr-12 font-headline font-bold text-sm text-primary focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
+            >
+              <option>All Competitors</option>
+              <option>Zepto</option>
+              <option>Swiggy</option>
+              <option>Blinkit</option>
+            </select>
+            <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-primary/40">expand_more</span>
+          </div>
           <div className="relative">
             <select className="appearance-none bg-surface-container-low border-0 rounded-xl px-6 py-3 pr-12 font-headline font-bold text-sm text-primary focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer">
               <option>Last 30 Days</option>
@@ -94,104 +116,132 @@ export default function GoogleAds() {
         </div>
       </div>
 
-      {/* Competitor tabs */}
-      <div className="flex items-center gap-3 mb-10">
-        {COMPETITORS.map((c) => (
-          <button key={c.id} onClick={() => setActiveTab(c.id)}
-            className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all duration-200 ${activeTab === c.id ? 'bg-primary text-white shadow-md scale-105' : 'bg-white text-on-surface-variant border border-outline-variant/30 hover:border-primary/30 hover:text-primary'}`}>
-            {c.name}
-          </button>
-        ))}
-        <span className="ml-3 text-xs text-on-surface-variant/50 font-body">{d.tagline}</span>
-      </div>
-
-      {/*  Messaging Trends Chart  */}
+      {/* Messaging Trends Chart */}
       <section className="mb-16">
         <div className="bg-surface-container-lowest rounded-[2rem] p-10 shadow-[0_20px_40px_rgba(15,27,52,0.03)] border border-primary/5">
           <div className="flex justify-between items-start mb-10">
             <div>
-              <h3 className="text-xl font-headline font-extrabold text-primary mb-1">{data.chartTitle}</h3>
-              <p className="text-sm text-primary/50 font-medium">{data.chartDesc}</p>
+              <h3 className="text-xl font-headline font-extrabold text-primary mb-1">Messaging Frequency</h3>
+              <p className="text-sm text-primary/50 font-medium">Aggregated ads detected per SERP query run</p>
             </div>
-            <div className="flex items-center gap-6">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-primary"></div>
-                <span className="text-xs font-bold uppercase tracking-widest text-primary/60">Creative Volume</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-tertiary-container"></div>
-                <span className="text-xs font-bold uppercase tracking-widest text-primary/60">Shift Markers</span>
-              </div>
-            </div>
+            <button onClick={() => loadAds(selectedCompetitor)} className="bg-surface-container-low text-primary px-4 py-2 rounded-xl text-xs font-bold hover:bg-primary/5 transition flex items-center gap-2">
+              <span className="material-symbols-outlined text-sm">refresh</span> Refresh Now
+            </button>
           </div>
-          <div className="h-[240px] w-full flex items-end gap-1 relative overflow-hidden group">
-            {/*  SVG Chart Background  */}
-            <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
-              {activeTab === 'swiggy' && <path className="opacity-100" d="M0 200 C 50 180, 100 220, 150 150 S 250 50, 300 120 S 400 180, 450 140 S 550 40, 600 80 S 700 160, 800 120 S 900 60, 1000 100 S 1100 180, 1200 140" fill="none" stroke="#09152e" strokeWidth="3"></path>}
-              {activeTab === 'zepto' && <path className="opacity-100" d="M0 220 L 100 180 L 200 140 L 300 190 L 400 80 L 500 110 L 600 50 L 700 90 L 800 40" fill="none" stroke="#6b21a8" strokeWidth="3"></path>}
-              {activeTab === 'blinkit' && <path className="opacity-100" d="M0 100 C 200 120, 400 60, 600 150 S 800 80, 1000 120" fill="none" stroke="#fbbf24" strokeWidth="3"></path>}
-            </svg>
-            <div className="absolute left-[25%] top-[15%] w-4 h-4 rounded-full bg-tertiary-fixed border-4 border-primary shadow-lg z-10 transition-all duration-500"></div>
-            <div className="absolute left-[55%] top-[10%] w-4 h-4 rounded-full bg-tertiary-fixed border-4 border-primary shadow-lg z-10 transition-all duration-500"></div>
-            <div className="absolute left-[85%] top-[25%] w-4 h-4 rounded-full bg-tertiary-fixed border-4 border-primary shadow-lg z-10 transition-all duration-500"></div>
-            <div className="absolute bottom-0 left-0 w-full flex justify-between px-2 pt-4 border-t border-primary/5 translate-y-8">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-primary/30">01 Oct</span>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-primary/30">08 Oct</span>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-primary/30">15 Oct</span>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-primary/30">22 Oct</span>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-primary/30">29 Oct</span>
-            </div>
+          <div className="h-[240px] w-full flex items-end gap-1 relative overflow-hidden group border-b border-primary/10">
+            {fetchHistory.length === 0 ? (
+              <div className="w-full h-full flex items-center justify-center text-primary/40 font-bold">Awaiting data...</div>
+            ) : (
+              <div className="absolute inset-0 flex items-end justify-around pb-12 px-8">
+                {fetchHistory.map((pt, i) => {
+                  const heightPercent = Math.min((pt.count / 30) * 100, 100);
+                  return (
+                    <div key={i} className="flex flex-col items-center gap-2 relative group w-16">
+                      <div className="w-full bg-primary/10 rounded-t-sm transition-all duration-500 relative" style={{ height: `${heightPercent}%` }}>
+                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-tertiary-fixed border-2 border-primary shadow-lg z-10"></div>
+                      </div>
+                      <span className="text-[10px] absolute -bottom-8 font-bold uppercase tracking-widest text-primary/40 whitespace-nowrap">{pt.time}</span>
+                      <span className="absolute -top-10 opacity-0 group-hover:opacity-100 text-xs font-bold bg-primary text-white px-2 py-1 rounded">{pt.count} Ads</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       </section>
 
-      {/*  Ad Grid Section  */}
+      {/* Grid */}
       <section>
         <div className="flex items-center justify-between mb-8">
           <h3 className="text-2xl font-headline font-extrabold text-primary">Active Intelligence Feed</h3>
-          <div className="flex items-center gap-2 text-primary/40 text-xs font-bold uppercase tracking-widest">
-            <span>Sorting by: Relevance</span>
-            <span className="material-symbols-outlined text-sm">sort</span>
-          </div>
+          {isLoading && <span className="text-sm font-bold text-primary/60 animate-pulse">Fetching Real-time SERP...</span>}
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-          {data.ads.map(ad => (
-            <article key={ad.id} className="group relative bg-surface-container-lowest rounded-3xl overflow-hidden shadow-[0_10px_30px_rgba(15,27,52,0.02)] border border-primary/5 transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_30px_60px_rgba(15,27,52,0.08)]">
-              {ad.type && (
+
+        {error ? (
+          <div className="p-12 text-center bg-surface-container-lowest rounded-3xl border border-primary/10">
+            <span className="material-symbols-outlined text-4xl text-primary/30 mb-2">signal_disconnected</span>
+            <p className="text-lg font-bold text-primary/50">No ads detected — retrying...</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+            {ads.map((ad) => (
+              <article 
+                key={ad.id} 
+                onClick={() => openComparisonModal(ad)}
+                className="group relative bg-surface-container-lowest rounded-3xl overflow-hidden shadow-[0_10px_30px_rgba(15,27,52,0.02)] border border-primary/10 transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_30px_60px_rgba(15,27,52,0.08)] cursor-pointer"
+              >
                 <div className="absolute top-4 left-4 z-20">
                   <div className="bg-tertiary-fixed text-on-tertiary-fixed px-3 py-1.5 rounded-full flex items-center gap-2 shadow-sm">
                     <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>
-                    <span className="text-[10px] font-black uppercase tracking-wider font-headline">{ad.type}</span>
+                    <span className="text-[10px] font-black uppercase tracking-wider font-headline">{ad.badge}</span>
                   </div>
                 </div>
-              )}
-              <div className="relative aspect-[16/10] overflow-hidden">
-                <img alt="Ad Creative" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src={ad.image} />
-                <div className="absolute inset-0 bg-gradient-to-t from-primary/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              </div>
-              <div className="p-8 pb-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <span className={`w-6 h-6 rounded-lg ${ad.color} flex items-center justify-center`}>
-                    <span className="material-symbols-outlined text-white text-[14px]">{ad.icon}</span>
-                  </span>
-                  <span className="text-xs font-bold uppercase tracking-widest text-primary/40">{ad.platform}</span>
+                <div className="relative aspect-[16/10] overflow-hidden">
+                  <img alt="Ad Creative" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src={ad.thumbnail} />
+                  <div className="absolute inset-0 bg-gradient-to-t from-primary/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                 </div>
-                <h4 className="text-xl font-headline font-extrabold text-primary mb-4 leading-snug">"{ad.title}"</h4>
-                <p className="text-sm text-primary/60 mb-6 font-medium line-clamp-2">{ad.desc}</p>
-                <div className="flex items-center justify-between pt-6 border-t border-primary/5">
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-primary/30 mb-1">Start Date</p>
-                    <p className="text-xs font-bold text-primary">{ad.date}</p>
+                <div className="p-8 pt-4">
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
+                      <span className="material-symbols-outlined text-primary text-[14px]">public</span>
+                    </span>
+                    <span className="text-xs font-bold uppercase tracking-widest text-primary/50">{ad.competitor} • {ad.channel}</span>
                   </div>
-                  <button className="bg-surface-container-low text-primary px-5 py-2 rounded-xl text-xs font-extrabold font-headline hover:bg-primary hover:text-white transition-colors">
-                    View Creative
-                  </button>
+                  <h4 className="text-lg font-headline font-extrabold text-primary mb-3 leading-snug line-clamp-2">{ad.headline}</h4>
+                  <p className="text-sm text-primary/70 font-medium line-clamp-3 mb-4">{ad.summary}</p>
+                  
+                  <div className="flex items-center justify-between pt-4 border-t border-primary/10">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-primary/40 mb-1">Target Keyword</p>
+                      <p className="text-xs font-bold text-primary/80 truncate w-32">{ad.keyword}</p>
+                    </div>
+                    <span className="text-xs font-extrabold text-tertiary-container group-hover:underline">Compare Changes</span>
+                  </div>
                 </div>
-              </div>
-            </article>
-          ))}
-        </div>
+              </article>
+            ))}
+          </div>
+        )}
       </section>
+
+      {/* Comparison Modal */}
+      {selectedAd && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/80 backdrop-blur-sm p-4" onClick={() => setSelectedAd(null)}>
+          <div className="bg-surface-container-lowest rounded-3xl p-8 max-w-2xl w-full shadow-2xl relative" onClick={e => e.stopPropagation()}>
+            <button className="absolute top-6 right-6 text-primary/40 hover:text-primary" onClick={() => setSelectedAd(null)}>
+              <span className="material-symbols-outlined">close</span>
+            </button>
+            <div className="bg-tertiary-fixed/20 text-tertiary-container px-3 py-1 rounded inline-flex items-center gap-2 mb-6 text-xs font-bold uppercase tracking-widest border border-tertiary-container/30">
+               <span className="material-symbols-outlined text-[16px]">history</span>
+               Messaging Shift Detected
+            </div>
+            <h2 className="text-2xl font-headline font-black text-primary mb-2 whitespace-pre-wrap">{selectedAd.competitor}</h2>
+            <p className="text-sm text-primary/50 font-bold uppercase tracking-widest mb-8">{selectedAd.headline}</p>
+
+            <div className="space-y-6">
+              <div className="p-5 rounded-2xl bg-surface-container-low/50 border border-primary/5">
+                <span className="text-[10px] font-black uppercase tracking-widest text-primary/40 mb-2 block">Previous Snapshot</span>
+                <p className="text-sm font-medium text-primary/60 italic">
+                  {previousSnapshotsRef.current[selectedAd.competitor] 
+                    ? previousSnapshotsRef.current[selectedAd.competitor].summary 
+                    : "Fetching initial baseline... (No prior snapshot found in current session)"}
+                </p>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-primary/5 border border-primary/10">
+                <span className="text-[10px] font-black uppercase tracking-widest text-primary mb-2 block">Current Live Query</span>
+                <p className="text-sm font-bold text-primary leading-relaxed">
+                  <HighlightDiff 
+                    oldText={previousSnapshotsRef.current[selectedAd.competitor]?.summary} 
+                    newText={selectedAd.summary} 
+                  />
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
