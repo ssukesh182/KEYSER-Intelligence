@@ -6,7 +6,6 @@ psycopg2-binary==2.9.9
 python-dotenv==1.0.1
 beautifulsoup4==4.12.3
 playwright==1.44.0
-difflib2==0.0.3
 apscheduler==3.10.4
 requests==2.32.3
 lxml==5.2.2
