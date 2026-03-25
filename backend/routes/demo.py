@@ -58,3 +58,30 @@ def trigger_osint():
     except Exception as e:
         print(f"[DEMO] ERROR triggering OSINT: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
+
+
+@bp.route("/trigger_fusion", methods=["POST"])
+def trigger_fusion():
+    """
+    POST /api/demo/trigger_fusion
+    Manually triggers the OSINT Fusion pipeline for all competitors.
+    """
+    print("[DEMO] /api/demo/trigger_fusion called")
+    try:
+        from workers.intelligence_tasks import run_fusion_intelligence_task
+        competitors = db.session.query(Competitor).all()
+        
+        task_ids = []
+        for c in competitors:
+            t = run_fusion_intelligence_task.delay(c.id)
+            task_ids.append(t.id)
+            print(f"[DEMO] Queued Fusion for: {c.name}")
+
+        return jsonify({
+            "success": True, 
+            "message": f"Queued {len(task_ids)} Fusion tasks",
+            "task_ids": task_ids
+        }), 202
+    except Exception as e:
+        print(f"[DEMO] ERROR triggering Fusion: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500

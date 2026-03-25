@@ -1,4 +1,65 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+
+const API_BASE = 'http://localhost:5001';
+
+// Maps UI tab labels to backend 'source' field values
+const SOURCE_MAP = {
+  'App Store':   r => r.source === 'serp_google' && r.reviewer?.toLowerCase().includes('apple'),
+  'Play Store':  r => r.source === 'serp_google' && !r.reviewer?.toLowerCase().includes('apple'),
+  'G2':          r => r.source === 'g2',
+  'Trustpilot':  r => r.source === 'trustpilot',
+  'Reddit':      r => r.source === 'reddit',
+  'All':         () => true,
+};
+
+const SOURCES = ['All', 'App Store', 'Play Store', 'G2', 'Trustpilot', 'Reddit'];
+
+function StarRating({ stars }) {
+  return (
+    <div className="flex gap-0.5 text-tertiary-container">
+      {[...Array(5)].map((_, j) => (
+        <span key={j} className="material-symbols-outlined text-lg" style={j < stars ? { fontVariationSettings: "'FILL' 1" } : {}}>
+          star
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function SentimentBadge({ rating }) {
+  if (rating >= 4) return <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">Positive</span>;
+  if (rating <= 2) return <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">Negative</span>;
+  return <span className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">Neutral</span>;
+}
+
+function LiveReviewCard({ review }) {
+  return (
+    <div className="bg-surface-container-lowest p-8 rounded-3xl border border-primary/5 shadow-sm hover:shadow-md transition-shadow">
+      <div className="flex justify-between items-start mb-4">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-lg">
+            {(review.reviewer || 'U')[0].toUpperCase()}
+          </div>
+          <div>
+            <h5 className="font-bold text-primary">{review.reviewer || 'Anonymous'}</h5>
+            <p className="text-xs text-on-surface-variant/70">{review.source} · {review.review_time ? new Date(parseFloat(review.review_time) * (review.review_time.length < 13 ? 1000 : 1)).toLocaleDateString() : 'Recent'}</p>
+          </div>
+        </div>
+        <div className="flex flex-col items-end gap-2">
+          <StarRating stars={review.rating || 3} />
+          <SentimentBadge rating={review.rating || 3} />
+        </div>
+      </div>
+      <p className="text-on-surface-variant leading-relaxed mb-4 italic">"{review.review_text?.slice(0, 300)}{review.review_text?.length > 300 ? '…' : ''}"
+      </p>
+      <div className="flex items-center gap-3 pt-4 border-t border-primary/5">
+        <span className="text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest">Source:</span>
+        <span className="bg-surface-container-low text-primary px-3 py-1 rounded-lg text-xs font-semibold">{review.source}</span>
+        <span className="bg-surface-container-low text-primary px-3 py-1 rounded-lg text-xs font-semibold">{review.competitor}</span>
+      </div>
+    </div>
+  );
+}
 
 const COMPETITORS = [
   { id: 'zepto', name: 'Zepto', tagline: 'Quick commerce leader, 10-min delivery' },
@@ -52,9 +113,47 @@ const BASE_DATA = {
 };
 
 export default function AppReviews() {
-  const [activeTab, setActiveTab] = useState('swiggy');
+  const [activeTab, setActiveTab] = useState('zepto');
+  const [activeSource, setActiveSource] = useState('All');
+  const [liveReviews, setLiveReviews] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [totalCount, setTotalCount] = useState(0);
+
   const d = COMPETITORS.find(c => c.id === activeTab);
   const data = BASE_DATA[activeTab];
+
+  const fetchReviews = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const resp = await fetch(`${API_BASE}/api/source/all-reviews`);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const json = await resp.json();
+      const all = json.reviews || [];
+      setTotalCount(all.length);
+
+      // Filter by competitor tab
+      const competitorFiltered = all.filter(r =>
+        r.competitor?.toLowerCase().includes(activeTab === 'zepto' ? 'zepto' :
+          activeTab === 'swiggy' ? 'swiggy' : 'blinkit')
+        || r.review_text?.toLowerCase().includes(activeTab === 'zepto' ? 'zepto' :
+          activeTab === 'swiggy' ? 'swiggy' : 'blinkit')
+      );
+
+      // Filter by source tab
+      const filterFn = SOURCE_MAP[activeSource] || (() => true);
+      setLiveReviews(competitorFiltered.filter(filterFn));
+    } catch (e) {
+      setError('Could not load live reviews. Showing static data.');
+      setLiveReviews([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [activeTab, activeSource]);
+
+  useEffect(() => { fetchReviews(); }, [fetchReviews]);
+
 
   return (
     <div className="pt-28 px-12 pb-12 flex-1 max-w-[1400px] mx-auto w-full">
@@ -64,11 +163,17 @@ export default function AppReviews() {
           <span className="text-xs font-bold uppercase tracking-[0.2em] text-tertiary-container mb-2 block">Sentiment Intelligence</span>
           <h1 className="font-headline font-extrabold text-4xl text-primary tracking-tight">App Reviews Analysis</h1>
         </div>
-        <div className="flex bg-surface-container-low p-1.5 rounded-2xl">
-          <button className="px-6 py-2.5 rounded-xl text-sm font-bold bg-white text-primary shadow-sm">App Store</button>
-          <button className="px-6 py-2.5 rounded-xl text-sm font-medium text-on-surface-variant hover:bg-white/50 transition-all">Play Store</button>
-          <button className="px-6 py-2.5 rounded-xl text-sm font-medium text-on-surface-variant hover:bg-white/50 transition-all">G2</button>
-          <button className="px-6 py-2.5 rounded-xl text-sm font-medium text-on-surface-variant hover:bg-white/50 transition-all">Trustpilot</button>
+        <div className="flex flex-wrap gap-1.5 bg-surface-container-low p-1.5 rounded-2xl">
+          {SOURCES.map(src => (
+            <button key={src} onClick={() => setActiveSource(src)}
+              className={`px-5 py-2 rounded-xl text-sm font-bold transition-all ${
+                activeSource === src
+                  ? 'bg-white text-primary shadow-sm'
+                  : 'font-medium text-on-surface-variant hover:bg-white/50'
+              }`}>
+              {src}
+            </button>
+          ))}
         </div>
       </section>
 
@@ -187,46 +292,74 @@ export default function AppReviews() {
         </div>
       </section>
 
-      {/*  Review Feed Section  */}
+      {/*  Review Feed Section — Live from backend  */}
       <section>
         <div className="flex items-center justify-between mb-8">
           <h3 className="font-headline font-extrabold text-2xl text-primary tracking-tight">Recent Review Intelligence</h3>
-          <div className="flex gap-2">
-            <span className="text-xs font-bold text-on-surface-variant/60 uppercase tracking-widest mr-4">Showing 3 of 1,240 reviews</span>
-            <button className="material-symbols-outlined text-primary hover:bg-surface-container-low p-1 rounded-lg transition-colors">keyboard_arrow_left</button>
-            <button className="material-symbols-outlined text-primary hover:bg-surface-container-low p-1 rounded-lg transition-colors">keyboard_arrow_right</button>
+          <div className="flex gap-2 items-center">
+            {loading && <span className="text-xs text-on-surface-variant/50 animate-pulse">Loading…</span>}
+            {!loading && liveReviews.length > 0 && (
+              <span className="text-xs font-bold text-on-surface-variant/60 uppercase tracking-widest mr-4">
+                {liveReviews.length} live · {totalCount} total
+              </span>
+            )}
+            <button onClick={fetchReviews} className="material-symbols-outlined text-primary hover:bg-surface-container-low p-1 rounded-lg transition-colors" title="Refresh">refresh</button>
           </div>
         </div>
-        <div className="space-y-6">
-          {data.reviews.map((rev, i) => (
-            <div key={i} className="bg-surface-container-lowest p-8 rounded-3xl border border-primary/5 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex justify-between items-start mb-4">
-                <div className="flex items-center gap-4">
-                  <img alt="User profile" className="w-12 h-12 rounded-full object-cover" src={rev.avatar} />
-                  <div>
-                    <h5 className="font-bold text-primary">{rev.name}</h5>
-                    <p className="text-xs text-on-surface-variant/70">{rev.source}</p>
+
+        {error && (
+          <div className="mb-6 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
+            ⚠️ {error} — Backend might not be running.
+          </div>
+        )}
+
+        {/* Live reviews from backend */}
+        {liveReviews.length > 0 ? (
+          <div className="space-y-6">
+            {liveReviews.slice(0, 10).map((rev, i) => (
+              <LiveReviewCard key={i} review={rev} />
+            ))}
+          </div>
+        ) : !loading ? (
+          /* Fallback to static data when no live data for this filter */
+          <div>
+            {error === null && liveReviews.length === 0 && (
+              <div className="mb-4 px-4 py-2 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-700">
+                No live data for this filter — showing static demo data.
+              </div>
+            )}
+            <div className="space-y-6">
+              {data.reviews.map((rev, i) => (
+                <div key={i} className="bg-surface-container-lowest p-8 rounded-3xl border border-primary/5 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex items-center gap-4">
+                      <img alt="User profile" className="w-12 h-12 rounded-full object-cover" src={rev.avatar} />
+                      <div>
+                        <h5 className="font-bold text-primary">{rev.name}</h5>
+                        <p className="text-xs text-on-surface-variant/70">{rev.source}</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-2">
+                      <div className="flex gap-0.5 text-tertiary-container">
+                        {[...Array(5)].map((_, j) => (
+                          <span key={j} className="material-symbols-outlined text-lg" style={j < rev.stars ? { fontVariationSettings: "'FILL' 1" } : {}}>star</span>
+                        ))}
+                      </div>
+                      <span className={`${rev.sentimentColor} px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest`}>{rev.sentiment}</span>
+                    </div>
                   </div>
-                </div>
-                <div className="flex flex-col items-end gap-2">
-                  <div className="flex gap-0.5 text-tertiary-container">
-                    {[...Array(5)].map((_, j) => (
-                      <span key={j} className="material-symbols-outlined text-lg" style={j < rev.stars ? { fontVariationSettings: "'FILL' 1" } : {}}>star</span>
+                  <p className="text-on-surface-variant leading-relaxed mb-6 italic">"{rev.text}"</p>
+                  <div className="flex items-center gap-3 pt-4 border-t border-primary/5">
+                    <span className="text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest">Tags:</span>
+                    {rev.tags.map(tag => (
+                      <span key={tag} className="bg-surface-container-low text-primary px-3 py-1 rounded-lg text-xs font-semibold">{tag}</span>
                     ))}
                   </div>
-                  <span className={`${rev.sentimentColor} px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest`}>{rev.sentiment}</span>
                 </div>
-              </div>
-              <p className="text-on-surface-variant leading-relaxed mb-6 italic">"{rev.text}"</p>
-              <div className="flex items-center gap-3 pt-4 border-t border-primary/5">
-                <span className="text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest">Tags:</span>
-                {rev.tags.map(tag => (
-                  <span key={tag} className="bg-surface-container-low text-primary px-3 py-1 rounded-lg text-xs font-semibold">{tag}</span>
-                ))}
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </div>
+        ) : null}
       </section>
     </div>
   );

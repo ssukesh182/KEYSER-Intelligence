@@ -13,45 +13,55 @@ from flask import Blueprint, jsonify
 bp = Blueprint("source_reviews", __name__, url_prefix="/api/source")
 
 # ──────────────────────────────────────────────────────────────────────────────
-# 1. SERP API Google Maps Reviews
+# 1. SERP API Google Search Reviews (engine=google — same as frontend)
 # ──────────────────────────────────────────────────────────────────────────────
 def fetch_serp_reviews():
     api_key = os.environ.get("SERPAPI_KEY", os.environ.get("VITE_SERP_API_KEY", ""))
-    url = f"https://serpapi.com/search.json?engine=google_maps&q=Zepto+Chennai&api_key={api_key}"
-    
-    try:
-        response = requests.get(url)
-        response.raise_for_status()
-        data = response.json()
-        
-        # Guard clause if no local results
-        local_results = data.get("local_results", [])
-        if not local_results:
-            return []
-            
-        reviews_data = local_results[0].get("reviews", [])
-        
-        normalized = []
-        for rev in reviews_data:
-            normalized.append({
-                "source": "serp_google_maps",
-                "competitor": "Zepto",
-                "reviewer": rev.get("user", {}).get("name", "Unknown"),
-                "rating": rev.get("rating", 0),
-                "review_text": rev.get("snippet", ""),
-                "review_time": rev.get("date", "")
-            })
-        return normalized
-    except Exception as e:
-        print(f"[SERP] Error fetching reviews: {e}")
-        return [{"error": "SERP API failed"}]
+    if not api_key:
+        print("[SERP] No API key found — skipping.")
+        return []
+
+    competitors = ["Zepto app review", "Blinkit app review", "Swiggy Instamart review"]
+    normalized = []
+
+    for query in competitors:
+        competitor_name = query.split(" ")[0]
+        url = "https://serpapi.com/search.json"
+        params = {
+            "engine": "google",
+            "q": query,
+            "location": "India",
+            "api_key": api_key,
+            "num": 5
+        }
+        try:
+            response = requests.get(url, params=params, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+
+            results = data.get("organic_results") or data.get("news_results") or []
+            for item in results[:5]:
+                normalized.append({
+                    "source": "serp_google",
+                    "competitor": competitor_name,
+                    "reviewer": item.get("source", "Google Result"),
+                    "rating": 3,  # Neutral default for organic results
+                    "review_text": item.get("snippet", item.get("title", "")),
+                    "review_time": item.get("date", "")
+                })
+        except Exception as e:
+            print(f"[SERP] Error fetching for '{query}': {e}")
+
+    print(f"[SERP] Fetched {len(normalized)} results from Google Search.")
+    return normalized
 
 @bp.route("/serp-reviews", methods=["GET"])
 def get_serp_reviews():
     results = fetch_serp_reviews()
-    if len(results) == 1 and "error" in results[0]:
-        return jsonify(results[0]), 500
+    if not results:
+        return jsonify({"message": "No SERP results found or API key missing."}), 200
     return jsonify(results)
+
 
 
 # ──────────────────────────────────────────────────────────────────────────────
