@@ -33,6 +33,7 @@ def create_app():
     print("[APP] Extensions initialised (db, cors)")
 
     # ── Blueprints ────────────────────────────────────────────
+    print("[APP] Registering blueprints...")
     from routes.competitors import bp as competitors_bp
     from routes.snapshots   import bp as snapshots_bp
     from routes.diffs       import bp as diffs_bp
@@ -52,6 +53,10 @@ def create_app():
     app.register_blueprint(brief_bp)
     app.register_blueprint(whitespace_bp)
     app.register_blueprint(copilot_bp)
+
+    # Initialize APScheduler (runs exactly once)
+    if not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
+        init_scheduler(app)
     print("[APP] All 9 blueprints registered")
 
     # ── Create DB tables ──────────────────────────────────────
@@ -75,6 +80,7 @@ def create_app():
                 "/api/insights",
                 "/api/health",
                 "/api/demo/reset",
+                "/api/demo/trigger_osint",
             ]
         })
 
@@ -91,6 +97,28 @@ def create_app():
 
     print("[APP] Flask app ready")
     return app
+
+
+def init_scheduler(app):
+    """Initialize APScheduler with Flask app context."""
+    from scheduler.scheduler import scheduler
+    try:
+        from scheduler.intelligence_scheduler import register_jobs
+        
+        # Only start if enabled in config
+        if not app.config.get("SCHEDULER_ENABLED", True):
+            print("[APP] Scheduler disabled via config")
+            return
+
+        # Add jobs to the scheduler
+        register_jobs(scheduler, app)
+        
+        # Start the scheduler thread
+        if not scheduler.running:
+            scheduler.start()
+            print("[APP] APScheduler started successfully")
+    except ImportError:
+        pass
 
 
 if __name__ == "__main__":

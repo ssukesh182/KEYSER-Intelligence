@@ -41,25 +41,37 @@ def get_snapshot(snapshot_id):
 
 @bp.route("/trigger", methods=["POST"])
 def trigger_scrape():
-    """POST /api/snapshots/trigger — manually trigger scrape for a source."""
+    """POST /api/snapshots/trigger — manually trigger scrape for a source or global scrape in background."""
     print("[ROUTE] POST /api/snapshots/trigger")
     try:
         body      = request.get_json() or {}
         source_id = body.get("source_id")
-        if not source_id:
-            return jsonify({"success": False, "error": "source_id is required"}), 400
 
-        source = db.session.query(Source).get(source_id)
-        if not source:
-            return jsonify({"success": False, "error": "Source not found"}), 404
+        if source_id:
+            # Specific source scrape manually
+            source = db.session.query(Source).get(source_id)
+            if not source:
+                return jsonify({"success": False, "error": "Source not found"}), 404
 
-        print(f"[ROUTE] Triggering scrape for source_id={source_id}, url={source.url}")
-        snapshot = scrape_and_store(source, db.session)
+            print(f"[ROUTE] Triggering scrape for source_id={source_id}, url={source.url}")
+            snapshot = scrape_and_store(source, db.session)
 
-        if not snapshot:
-            return jsonify({"success": False, "error": "Scrape failed — check logs"}), 500
+            if not snapshot:
+                return jsonify({"success": False, "error": "Scrape failed — check logs"}), 500
 
-        return jsonify({"success": True, "data": snapshot.to_dict()}), 201
+            return jsonify({"success": True, "data": snapshot.to_dict()}), 201
+        
+        else:
+            # Background global scrape if no specific source_id is passed
+            from workers.tasks import scrape_all_sources_task
+            task = scrape_all_sources_task.delay()
+            print(f"[ROUTE] Queued global scrape task_id={task.id}")
+            return jsonify({
+                "success": True, 
+                "message": "Background scrape triggered", 
+                "task_id": task.id
+            }), 202
+
     except Exception as e:
         print(f"[ROUTE] ERROR POST /api/snapshots/trigger: {e}")
         return jsonify({"success": False, "error": str(e)}), 500

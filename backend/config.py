@@ -27,4 +27,12 @@ SCRAPER_TIMEOUT_MS      = int(os.getenv("SCRAPER_TIMEOUT_MS", 30000))
 # ─── External APIs (Phase 2) ─────────────────────────────────
 TAVILY_API_KEY = os.getenv("TAVILY_API_KEY", "")
 
-print(f"[CONFIG] Loaded — DB: {DB_NAME} on {DB_HOST}:{DB_PORT} | Port: {FLASK_PORT}")
+# ─── Redis + Celery (Phase 2) ─────────────────────────────────
+REDIS_URL          = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0")
+CELERY_BROKER_URL  = os.getenv("CELERY_BROKER_URL", REDIS_URL)
+CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", REDIS_URL)
+
+# ─── Scheduler ────────────────────────────────────────────────
+SCHEDULER_ENABLED = os.getenv("SCHEDULER_ENABLED", "true").lower() == "true"
+
+print(f"[CONFIG] Loaded — DB: {DB_NAME} on {DB_HOST}:{DB_PORT} | Port: {FLASK_PORT} | Redis: {REDIS_URL}")
