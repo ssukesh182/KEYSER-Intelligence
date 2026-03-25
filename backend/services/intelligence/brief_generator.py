@@ -7,7 +7,11 @@ logger = logging.getLogger(__name__)
 
 BRIEF_PROMPT = """
 You are a senior market analyst. Given these top signals across the market, write a 3-recommendation CEO brief.
-For each recommendation, provide the evidence from the signals and highlight the urgency.
+For every single recommendation, you MUST explicitly include and bold exactly these 4 sub-headings:
+1) What to do
+2) Why now (the urgency)
+3) Evidence (referencing exact signals provided)
+4) Timeline (when this action must be completed)
 
 SIGNALS:
 {signals_text}
