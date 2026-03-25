@@ -12,11 +12,18 @@ class InsightGenerator:
         
     def generate_insight_for_diffs(self, competitor_name: str, diffs: list) -> dict:
         """Generates a structured insight from a list of diffs using Ollama."""
+        # Extract source metadata from the first diff if available
+        source_label = "unknown"
+        source_url = ""
+        if diffs and hasattr(diffs[0], 'source'):
+            source_label = diffs[0].source.label or "website"
+            source_url = diffs[0].source.url or ""
+
         context = build_diffs_context(diffs)
-        prompt = build_insight_prompt(competitor_name, context)
+        prompt = build_insight_prompt(competitor_name, context, source_label, source_url)
         
         try:
-            logger.info(f"Generating insight for {competitor_name} with {len(diffs)} diffs")
+            logger.info(f"Generating insight for {competitor_name} at {source_label} with {len(diffs)} diffs")
             response = self.client.generate(prompt, json_format=True)
             return parse_insight_response(response)
         except Exception as e:

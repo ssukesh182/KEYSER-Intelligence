@@ -9,18 +9,13 @@ Tasks:
         Runs confidence scoring pipeline asynchronously.
 """
 import logging
+from extensions import celery
 
 logger = logging.getLogger(__name__)
 
-
-def _get_celery_app():
-    """Lazy import to avoid circular dependencies at module level."""
-    from workers.celery_worker import celery_app
-    return celery_app
-
-
 # ─── Task: Full Validation Pipeline ──────────────────────────────────────────
 
+@celery.task(name="validation.validate_insight", max_retries=3, default_retry_delay=30)
 def validate_insight_task(
     insight_id: int,
     raw_llm_output: dict,
@@ -30,17 +25,6 @@ def validate_insight_task(
 ) -> dict:
     """
     Celery task: Run the full 5-layer validation pipeline for an insight.
-
-    Args:
-        insight_id:     DB id of the Insight record.
-        raw_llm_output: Dict from LLM: {claim, category, subcategory,
-                        competitor, confidence, supporting_text, source_url}.
-        source_type:    Source type string (e.g. 'google_ads').
-        old_text:       Previous snapshot text (for Layer 4 change validation).
-        new_text:       Current snapshot text (for Layer 4 change validation).
-
-    Returns:
-        Validation result dict with keys: accepted, confidence, layers.
     """
     logger.info("[Task/Validation] Starting for insight_id=%s", insight_id)
     try:
@@ -81,6 +65,7 @@ def validate_insight_task(
 
 # ─── Task: Scoring Only ───────────────────────────────────────────────────────
 
+@celery.task(name="validation.score_insight")
 def score_insight_task(
     insight_id: int,
     claim: str,
@@ -91,10 +76,6 @@ def score_insight_task(
 ) -> dict:
     """
     Celery task: Compute and persist confidence scores for an insight.
-
-    Returns the scores dict with keys:
-        base_confidence, triangulation_bonus, novelty_score,
-        urgency_score, final_confidence.
     """
     logger.info("[Task/Score] Starting for insight_id=%s", insight_id)
     try:
@@ -121,38 +102,3 @@ def score_insight_task(
         logger.exception("[Task/Score] FAILED for insight_id=%s: %s",
                          insight_id, exc)
         return {"error": str(exc)}
-
-
-# ─── Register as Celery tasks (optional — if Celery is configured) ────────────
-
-def register_celery_tasks():
-    """
-    Attempt to register tasks with Celery if the broker is reachable.
-    Safe to call even when Celery/Redis is not available.
-    """
-    try:
-        celery = _get_celery_app()
-
-        global validate_insight_task, score_insight_task
-        validate_insight_task = celery.task(
-            name="validation.validate_insight",
-            bind=False,
-            max_retries=3,
-            default_retry_delay=30,
-        )(validate_insight_task)
-
-        score_insight_task = celery.task(
-            name="validation.score_insight",
-            bind=False,
-        )(score_insight_task)
-
-        logger.info("[Tasks] Celery tasks registered successfully")
-    except Exception as exc:
-        logger.warning("[Tasks] Celery not available — tasks run synchronously: %s", exc)
-
-
-# Register on import (safe to fail)
-try:
-    register_celery_tasks()
-except Exception:
-    pass

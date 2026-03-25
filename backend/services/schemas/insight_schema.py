@@ -13,7 +13,7 @@ class InsightSchema(BaseModel):
     competitor:      str
     confidence:      float
     supporting_text: str
-    source_url:      str
+    source_url:      str = ""  # optional — LLMs often return 'unknown'
 
     @field_validator("confidence")
     @classmethod
@@ -22,8 +22,7 @@ class InsightSchema(BaseModel):
             raise ValueError(f"confidence must be in [0, 1], got {v}")
         return v
 
-    @field_validator("claim", "category", "subcategory", "competitor",
-                     "supporting_text", "source_url")
+    @field_validator("claim", "category", "subcategory", "competitor", "supporting_text")
     @classmethod
     def not_empty(cls, v: str) -> str:
         if not v or not v.strip():

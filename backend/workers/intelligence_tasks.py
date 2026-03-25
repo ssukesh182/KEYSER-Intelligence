@@ -16,15 +16,14 @@ from services.intelligence.triangulation_engine import triangulate_signals_for_c
 
 logger = logging.getLogger(__name__)
 
-# Fallback flask app creation if not bound to context
-flask_app = create_app()
-
 @celery.task(name='intelligence.generate_insights_for_snapshot')
 def generate_insights_for_snapshot_task(snapshot_id: int):
     """
     Celery task to kick off the insight pipeline for a given snapshot.
     """
-    with flask_app.app_context():
+    from app import create_app
+    app = create_app()
+    with app.app_context():
         logger.info(f"Starting Celery task to process snapshot {snapshot_id}")
         return process_snapshot_for_insights(snapshot_id)
 

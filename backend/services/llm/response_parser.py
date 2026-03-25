@@ -19,14 +19,36 @@ def parse_insight_response(response_text: str) -> dict:
         
         parsed = json.loads(clean_text)
         
-        # Ensure default fields map correctly
+        # Normalize confidence (some LLMs return 0-100 instead of 0-1)
+        raw_conf = parsed.get("confidence", 0.5)
+        try:
+            conf = float(raw_conf)
+            if conf > 1.0:
+                conf = conf / 100.0
+            conf = max(0.0, min(1.0, conf))
+        except:
+            conf = 0.5
+
+        # Normalize category to match InsightSchema expectations if possible
+        raw_cat = parsed.get("category", parsed.get("insight_type", "trend")).lower()
+        valid_categories = ["pricing", "messaging", "offer", "feature", "trend"]
+        category = "trend"
+        for vc in valid_categories:
+            if vc in raw_cat:
+                category = vc
+                break
+
         return {
-            "title": parsed.get("title", "Unknown Insight"),
-            "description": parsed.get("description", ""),
-            "category": parsed.get("insight_type", "trend"), # maps to insight.category
-            "confidence": float(parsed.get("confidence", 0.5)),
-            "urgency": int(parsed.get("urgency", 1)),
-            "action": parsed.get("action", "")
+            "claim":           parsed.get("claim", parsed.get("title", "Unknown Insight")),
+            "description":     parsed.get("description", ""),
+            "category":        category,
+            "subcategory":     parsed.get("subcategory", "general"),
+            "competitor":      parsed.get("competitor", "unknown"),
+            "confidence":      conf,
+            "urgency":         int(parsed.get("urgency", 1)),
+            "action":          parsed.get("action", ""),
+            "supporting_text": parsed.get("supporting_text", "No supporting text provided"),
+            "source_url":      parsed.get("source_url", "unknown")
         }
     except json.JSONDecodeError as e:
         logger.error(f"Failed to parse LLM insight response: {e}. Raw text: {response_text}")

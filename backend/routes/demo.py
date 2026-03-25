@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify
 from extensions import db
-from models import Competitor, Source, Snapshot, Diff, Insight, InsightSource
+from models import Competitor, Source, Snapshot, Diff, Insight, InsightSource, ConfidenceScore, ValidationLog
 
 bp = Blueprint("demo", __name__, url_prefix="/api/demo")
 
@@ -16,6 +16,8 @@ def reset_demo():
     try:
         # Delete in reverse dependency order
         db.session.query(InsightSource).delete()
+        db.session.query(ValidationLog).delete()
+        db.session.query(ConfidenceScore).delete()
         db.session.query(Insight).delete()
         db.session.query(Diff).delete()
         db.session.query(Snapshot).delete()

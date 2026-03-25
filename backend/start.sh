@@ -15,6 +15,22 @@ else
     echo "Make sure your PostgreSQL server is running locally!"
 fi
 
+echo "   Ensuring database exists (tables will be auto-created by Flask)..."
+if [ -f ".env" ]; then
+    set -a
+    source .env
+    set +a
+fi
+DB_NAME=${DB_NAME:-keyser}
+DB_USER=${DB_USER:-postgres}
+DB_HOST=${DB_HOST:-localhost}
+DB_PORT=${DB_PORT:-5432}
+
+# Attempt to safely create the DB using the imported .env credentials
+if command -v createdb &> /dev/null; then
+    PGPASSWORD=$DB_PASSWORD createdb -h $DB_HOST -p $DB_PORT -U $DB_USER $DB_NAME 2>/dev/null || true
+fi
+
 echo "2️⃣  Starting Data Broker (Redis)..."
 # Run Redis as a background daemon
 if command -v redis-server &> /dev/null; then

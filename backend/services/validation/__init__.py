@@ -56,7 +56,7 @@ def run_validation_pipeline(
         return {"accepted": False, "confidence": confidence, "layers": layers}
 
     # ── Layer 2: Extraction ───────────────────────────────────────────────────
-    l2 = validate_extraction(raw_llm_output, confidence, insight_id, db_session)
+    l2 = validate_extraction(raw_llm_output, confidence, insight_id, db_session, extra_context=new_text)
     layers["extraction"] = l2
     confidence = l2["confidence"]
     if not l2["passed"]:

@@ -37,6 +37,15 @@ def scrape_source_task(self, source_id: int):
 
         if snapshot:
             print(f"[TASK] scrape_source_task DONE — snapshot_id={snapshot.id}")
+            
+            # ── Trigger Intelligence Pipeline ──────────────────────────
+            try:
+                from workers.intelligence_tasks import generate_insights_for_snapshot_task
+                generate_insights_for_snapshot_task.delay(snapshot.id)
+                print(f"[TASK] Triggered intelligence pipeline for snapshot {snapshot.id}")
+            except Exception as ai_err:
+                print(f"[TASK] WARNING: Failed to trigger AI pipeline: {ai_err}")
+
             return {"status": "ok", "snapshot_id": snapshot.id}
         else:
             print(f"[TASK] scrape_source_task FAILED for source_id={source_id}")

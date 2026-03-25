@@ -48,10 +48,14 @@ def process_snapshot_for_insights(snapshot_id: int):
     confidence_score = float(insight_data.get("confidence", calculate_confidence(1, 1)))
     
     # 4. Write to DB
+    # Parser returns 'claim' as the headline (not 'title')
+    insight_title = insight_data.get("claim", insight_data.get("title", "New Insight"))
+    insight_desc = insight_data.get("description", insight_data.get("supporting_text", ""))
+    
     new_insight = Insight(
         competitor_id=competitor.id,
-        title=insight_data.get("title", "New Insight"),
-        description=insight_data.get("description", ""),
+        title=insight_title,
+        description=insight_desc,
         category=category,
         action=insight_data.get("action", ""),
         confidence=confidence_score,
@@ -66,10 +70,31 @@ def process_snapshot_for_insights(snapshot_id: int):
         isource = InsightSource(
             insight_id=new_insight.id,
             diff_id=diff.id,
-            reasoning="Extracted directly from diff"
+            reasoning=f"Analyzed via Ollama (gemma3) from diff {diff.id}. Confidence: {new_insight.confidence:.2f}"
         )
         db.session.add(isource)
         
     db.session.commit()
     logger.info(f"Successfully processed snapshot {snapshot_id} into Insight {new_insight.id}")
+
+    # 5. Trigger Async Validation Pipeline (Phase 3 Layered Validation)
+    try:
+        from workers.validation_tasks import validate_insight_task
+        
+        # Prepare data for validation
+        source_type = source.source_type if hasattr(source, 'source_type') else "landing_page"
+        old_text = diffs[0].old_snapshot.clean_text if (diffs and diffs[0].old_snapshot) else ""
+        new_text = diffs[0].new_snapshot.clean_text if (diffs and diffs[0].new_snapshot) else ""
+
+        validate_insight_task.delay(
+            insight_id=new_insight.id,
+            raw_llm_output=insight_data,
+            source_type=source_type,
+            old_text=old_text,
+            new_text=new_text
+        )
+        logger.info(f"Triggered async validation for insight {new_insight.id}")
+    except Exception as v_err:
+        logger.error(f"Failed to trigger validation task: {v_err}")
+
     return new_insight.id

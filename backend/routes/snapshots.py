@@ -44,7 +44,7 @@ def trigger_scrape():
     """POST /api/snapshots/trigger — manually trigger scrape for a source or global scrape in background."""
     print("[ROUTE] POST /api/snapshots/trigger")
     try:
-        body      = request.get_json() or {}
+        body      = request.get_json(silent=True) or {}
         source_id = body.get("source_id")
 
         if source_id:

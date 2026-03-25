@@ -1,27 +1,40 @@
 MASTER_INSIGHT_PROMPT = """
-You are an expert competitive intelligence analyst.
-Analyze the following diffs (changes) for the competitor "{competitor_name}".
+You are an expert competitive intelligence analyst. 
+Analyze these changes detected on {competitor_name}'s website ({source_label}):
 
-Extract the single most critical insight. Do not hallucinate.
-CRITICAL: The insight must be highly specific, actionable, and non-generic. Do NOT write vague statements like "improved their marketing" or "changed pricing". Specify exactly what changed (e.g., "Platform fee increased from $1 to $2.50").
-
-Return your response ONLY as a valid JSON object matching this schema:
-{{
-  "title": "Short, highly specific headline for the insight",
-  "description": "Detailed explanation of the exact change using exact numbers and direct implications",
-  "insight_type": "pricing" | "messaging" | "offer" | "feature" | "trend",
-  "confidence": 0.0 to 1.0 (float denoting how sure you are based strictly on evidence provided),
-  "urgency": 1 to 5 (integer, 5 being most urgent),
-  "action": "Specific, measurable recommended action for the user to take (e.g., 'Audit delivery fee margins in Delhi')"
-}}
-
-Here are the diffs:
 {diffs_text}
+
+Based on the above changes, extract the most important competitive insight.
+
+Return a JSON object (inside triple backticks) with EXACTLY these fields:
+```json
+{{
+  "claim": "Short specific claim grounded in the diff text above",
+  "description": "2-3 sentence explanation of what changed and why it matters",
+  "category": "pricing",
+  "subcategory": "delivery_fee",
+  "competitor": "{competitor_name}",
+  "confidence": 0.85,
+  "urgency": 3,
+  "action": "What your company should do in response",
+  "supporting_text": "Copy the exact relevant line(s) from the diff text above that prove the claim",
+  "source_url": "{source_url}"
+}}
+```
+
+RULES:
+- "claim" must summarize the key change in one sentence
+- "supporting_text" must be a direct quote from the diff text above
+- "confidence" must be a float between 0.0 and 1.0
+- "category" must be one of: pricing, messaging, offer, feature, trend
 """
 
-def build_insight_prompt(competitor_name: str, diffs_text: str) -> str:
+
+def build_insight_prompt(competitor_name: str, diffs_text: str, source_label: str = "unknown", source_url: str = "") -> str:
     """Format the master prompt with the competitor name and diffs."""
     return MASTER_INSIGHT_PROMPT.format(
         competitor_name=competitor_name,
+        source_label=source_label,
+        source_url=source_url,
         diffs_text=diffs_text
     )

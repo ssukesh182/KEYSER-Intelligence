@@ -28,6 +28,7 @@ def validate_extraction(
     base_confidence: float = 0.75,
     insight_id: Optional[int] = None,
     db_session=None,
+    extra_context: str = "",  # snapshot new_text for cross-referencing
 ) -> dict:
     """
     Run Layer-2 validation on LLM-extracted data.
@@ -72,7 +73,7 @@ def validate_extraction(
         }
 
     # ── 2. Hallucination check ────────────────────────────────────────────────
-    hallucination = is_hallucination(parsed.claim, parsed.supporting_text)
+    hallucination = is_hallucination(parsed.claim, parsed.supporting_text, extra_context)
     if hallucination:
         original = confidence
         confidence = round(confidence * HALLUCINATION_PENALTY, 4)
@@ -93,7 +94,7 @@ def validate_extraction(
         "confidence":    confidence,
         "errors":        errors,
         "hallucination": hallucination,
-        "parsed":        parsed,
+        "parsed":        parsed.model_dump() if parsed else None,
     }
 
 

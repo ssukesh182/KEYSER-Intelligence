@@ -48,3 +48,4 @@ print(f"[CELERY_WORKER] Broker: {CELERY_BROKER_URL}")
 # ── Import tasks so they are registered ──────────────────────────
 import workers.tasks  # noqa
 import workers.intelligence_tasks  # noqa
+import workers.validation_tasks  # noqa
