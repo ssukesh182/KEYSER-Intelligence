@@ -13,6 +13,7 @@ class Insight(db.Model):
     category      = db.Column(db.String(50))             # pricing, messaging, offer, trend
     action        = db.Column(db.Text)                   # "Test this angle", "Monitor this"
     confidence    = db.Column(db.Float, default=0.5)     # 0.0 – 1.0
+    urgency       = db.Column(db.Integer, default=1)     # 1-5 urgency scale
     novelty       = db.Column(db.Float, default=0.5)     # how new/unusual is this?
     frequency     = db.Column(db.Integer, default=1)     # how many times observed
     relevance     = db.Column(db.Float, default=0.5)     # relevance to current trends
