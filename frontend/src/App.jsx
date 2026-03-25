@@ -11,7 +11,7 @@ import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState('auth');
+  const [currentPage, setCurrentPage] = useState('landing');
 
   // Auth page — no sidebar/header
   if (currentPage === 'auth') {

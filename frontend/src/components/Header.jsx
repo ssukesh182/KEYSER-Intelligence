@@ -5,12 +5,6 @@ export default function Header() {
     <header className="sticky top-0 w-full z-30 flex justify-between items-center px-12 h-20 bg-white/80 backdrop-blur-xl border-b border-primary/5">
       <div className="flex items-center gap-8">
         <h1 className="font-headline font-black text-primary uppercase tracking-widest text-xl">KEYSER Intelligence</h1>
-        <div className="h-6 w-[1px] bg-outline-variant/30"></div>
-        <nav className="flex items-center gap-6">
-          <a className="text-tertiary-container font-bold border-b-2 border-tertiary-container pb-1 text-sm" href="#!">Zepto</a>
-          <a className="text-on-primary-fixed-variant/70 hover:text-primary transition-colors font-semibold text-sm" href="#!">Swiggy</a>
-          <a className="text-on-primary-fixed-variant/70 hover:text-primary transition-colors font-semibold text-sm" href="#!">Blinkit</a>
-        </nav>
       </div>
 
       <div className="flex items-center gap-4">

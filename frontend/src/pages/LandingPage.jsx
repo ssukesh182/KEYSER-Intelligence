@@ -38,11 +38,11 @@ export default function LandingPage({ onEnter, onNavigate }) {
                     Real-time intelligence across websites, ads, reviews, and hiring signals. Automated collection and synthesis into executive-ready briefs.
                 </p>
 <div className="flex flex-wrap gap-4 mb-12">
-<button onClick={onEnter} className="bg-primary text-white px-8 py-4 rounded-xl font-bold text-lg hover:shadow-[0_20px_40px_rgba(9,21,46,0.15)] transition-all flex items-center gap-3 active:scale-95">
+<button onClick={() => onNavigate('auth')} className="bg-primary text-white px-8 py-4 rounded-xl font-bold text-lg hover:shadow-[0_20px_40px_rgba(9,21,46,0.15)] transition-all flex items-center gap-3 active:scale-95">
                         TRY DEMO INSTANTLY
                         <span className="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
 </button>
-<button onClick={onEnter} className="bg-white text-primary border border-outline-variant px-8 py-4 rounded-xl font-bold text-lg hover:bg-surface-container-low transition-all">
+<button onClick={() => onNavigate('auth')} className="bg-white text-primary border border-outline-variant px-8 py-4 rounded-xl font-bold text-lg hover:bg-surface-container-low transition-all">
                         View Sample Brief
                     </button>
 </div>
@@ -182,10 +182,10 @@ export default function LandingPage({ onEnter, onNavigate }) {
 <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-8 relative z-10">Ready for Strategic Superiority?</h2>
 <p className="text-on-primary-container text-xl mb-12 max-w-2xl mx-auto relative z-10">Join elite intelligence teams using KEYSER to stay three moves ahead.</p>
 <div className="flex flex-col sm:flex-row justify-center gap-4 relative z-10">
-<button onClick={onEnter} className="bg-tertiary-fixed text-on-tertiary-fixed px-10 py-5 rounded-2xl font-bold text-lg hover:bg-tertiary-fixed-dim transition-all active:scale-95 shadow-lg">
+<button onClick={() => onNavigate('auth')} className="bg-tertiary-fixed text-on-tertiary-fixed px-10 py-5 rounded-2xl font-bold text-lg hover:bg-tertiary-fixed-dim transition-all active:scale-95 shadow-lg">
                         START FREE TRIAL
                     </button>
-<button onClick={onEnter} className="bg-white/10 backdrop-blur-md text-white border border-white/20 px-10 py-5 rounded-2xl font-bold text-lg hover:bg-white/20 transition-all active:scale-95">
+<button onClick={() => onNavigate('auth')} className="bg-white/10 backdrop-blur-md text-white border border-white/20 px-10 py-5 rounded-2xl font-bold text-lg hover:bg-white/20 transition-all active:scale-95">
                         REQUEST ENTERPRISE ACCESS
                     </button>
 </div>
