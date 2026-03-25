@@ -8,7 +8,7 @@ import os
 # Ensure backend/ is on the path so local imports work
 sys.path.insert(0, os.path.dirname(__file__))
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, send_from_directory
 from config     import DATABASE_URL, FLASK_PORT, FLASK_DEBUG
 from extensions import db, cors
 
@@ -85,6 +85,14 @@ def create_app():
                 "/api/demo/trigger_osint",
             ]
         })
+
+    @app.route("/copilot")
+    def copilot_ui():
+        return send_from_directory(
+            os.path.join(os.path.dirname(__file__), "static"),
+            "copilot.html"
+        )
+
 
     # ── Global error handlers ─────────────────────────────────
     @app.errorhandler(404)

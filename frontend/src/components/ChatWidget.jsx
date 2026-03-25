@@ -1,56 +1,116 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-const MOCK_RESPONSES = [
-  "Based on current signals, Zepto is increasing ad spend by ~22% in metro delivery windows. I'd recommend monitoring their pricing cadence over the next 48h.",
-  "Swiggy's Instamart has onboarded 340+ new SKUs this week — primarily in personal care. This suggests a category push ahead of Q4.",
-  "Blinkit's dark store expansion in Bangalore North is confirmed. Expect delivery SLA improvements of ~3 minutes in those zones by end of month.",
-  "Hiring signals from Zepto show a surge in ML Engineer and Data Scientist roles — likely tied to their personalization engine revamp.",
-  "Google Ads intelligence shows Swiggy bidding aggressively on '10-minute delivery' keywords. Current estimated CPC is ₹42, up 18% from last week.",
-  "App Store sentiment for Blinkit dropped 0.2 points this week — primary complaints around 'order cancellations' and 'substituted items'. Opportunity to counter-position.",
-  "Cross-platform analysis suggests Zepto is testing a new loyalty program in Pune and Chennai before a national rollout. Watch for ad creative changes.",
-  "I can generate a PDF brief summarising all three competitors for your next board review. Want me to include pricing, hiring, and ad intelligence sections?",
+const API_URL = 'http://localhost:5001/api/copilot/chat';
+
+const QUICK_PROMPTS = [
+  'Zepto pricing', 'Swiggy ads', 'Blinkit hiring', 'Whitespace gaps', 'This week strategy',
 ];
 
-let responseIndex = 0;
+// Renders a structured AI copilot response
+function CopilotCard({ data }) {
+  const conf = (data.confidence || 'low').toLowerCase();
+  const confColor = conf === 'high' ? 'text-green-600 bg-green-50 border-green-200'
+                  : conf === 'medium' ? 'text-amber-600 bg-amber-50 border-amber-200'
+                  : 'text-red-500 bg-red-50 border-red-200';
 
-function getNextResponse(userMessage) {
-  const msg = userMessage.toLowerCase();
-  if (msg.includes('zepto')) return "Zepto is showing aggressive pricing signals in Mumbai and Pune — delivery fee reductions of 15% on orders above ₹499 between 6–9 PM. This appears to be a demand stimulation experiment.";
-  if (msg.includes('swiggy')) return "Swiggy launched 214 new Google Ad campaigns this week targeting quick-commerce keywords. Their Instamart category is growing fastest in Tier-1 cities.";
-  if (msg.includes('blinkit')) return "Blinkit confirmed 4 new dark stores in Bangalore North via registry filings. Electronics is their fastest-growing category — AOV up 18% this quarter.";
-  if (msg.includes('report') || msg.includes('brief') || msg.includes('pdf')) return "Generating executive brief... I'll include pricing shifts, hiring signals, and ad intelligence for Zepto, Swiggy, and Blinkit. Ready for download in ~30 seconds.";
-  if (msg.includes('hiring') || msg.includes('jobs')) return "Zepto has opened 42 new roles this week — heavy on ML and Data Science. Swiggy added 91 roles, mostly in logistics and supply chain ops.";
-  if (msg.includes('ads') || msg.includes('google')) return "Swiggy leads in Google Ads volume with 214 active campaigns. Zepto is focusing on hyper-local targeting while Blinkit's spend is moderate at 98 campaigns.";
-  const r = MOCK_RESPONSES[responseIndex % MOCK_RESPONSES.length];
-  responseIndex++;
-  return r;
+  const Section = ({ icon, title, items, accent }) =>
+    items?.length ? (
+      <div className="mt-3">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-1.5 flex items-center gap-1">
+          <span className="material-symbols-outlined text-xs">{icon}</span>{title}
+        </p>
+        <ul className="space-y-1">
+          {items.map((item, i) => (
+            <li key={i} className={`text-xs text-on-surface leading-relaxed pl-2 border-l-2 ${accent} py-0.5`}>
+              {item}
+            </li>
+          ))}
+        </ul>
+      </div>
+    ) : null;
+
+  return (
+    <div className="text-sm">
+      {/* Summary */}
+      <p className="font-semibold text-on-surface text-sm leading-snug">{data.summary}</p>
+
+      <Section icon="insights"      title="Key Insights"         items={data.key_insights}         accent="border-primary/40" />
+      <Section icon="rocket_launch" title="Opportunities"        items={data.opportunities}        accent="border-green-400" />
+      <Section icon="bolt"          title="Recommended Actions"  items={data.recommended_actions}  accent="border-amber-400" />
+
+      {/* Footer */}
+      <div className="mt-3 flex items-start gap-2 pt-2 border-t border-outline-variant/20">
+        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${confColor} flex-shrink-0 mt-0.5`}>
+          {conf.toUpperCase()}
+        </span>
+        {data.reasoning && (
+          <p className="text-[10px] text-on-surface-variant leading-relaxed">{data.reasoning}</p>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export default function ChatWidget({ open, onClose }) {
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      text: "Hello. I'm your KEYSER Co-Pilot. Ask me anything about Zepto, Swiggy, or Blinkit — pricing shifts, hiring signals, ad strategies, or market moves.",
+      type: 'text',
+      text: "Hello. I'm your KEYSER AI Copilot. Ask me anything about competitor pricing, hiring signals, ad strategies, or market gaps.",
     },
   ]);
   const [input, setInput] = useState('');
   const [thinking, setThinking] = useState(false);
+  const [error, setError] = useState(null);
   const bottomRef = useRef(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, thinking]);
 
-  const send = () => {
+  const send = async () => {
     const text = input.trim();
-    if (!text) return;
+    if (!text || thinking) return;
     setInput('');
-    setMessages(prev => [...prev, { role: 'user', text }]);
+    setError(null);
+
+    setMessages(prev => [...prev, { role: 'user', type: 'text', text }]);
     setThinking(true);
-    setTimeout(() => {
-      setMessages(prev => [...prev, { role: 'assistant', text: getNextResponse(text) }]);
+
+    try {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text }),
+      });
+      const json = await res.json();
+
+      if (json.success && json.data) {
+        const d = json.data;
+        // If it looks like a structured response, render as card
+        if (d.summary) {
+          setMessages(prev => [...prev, { role: 'assistant', type: 'card', data: d }]);
+        } else if (typeof d.answer === 'string') {
+          // Fallback for old format
+          setMessages(prev => [...prev, { role: 'assistant', type: 'text', text: d.answer }]);
+        } else {
+          setMessages(prev => [...prev, { role: 'assistant', type: 'text', text: JSON.stringify(d) }]);
+        }
+      } else {
+        setMessages(prev => [...prev, {
+          role: 'assistant', type: 'text',
+          text: `Error: ${json.error || 'Unknown error from AI engine.'}`,
+        }]);
+      }
+    } catch (err) {
+      setError('Could not reach the AI engine. Make sure the backend is running on port 5001.');
+      setMessages(prev => [...prev, {
+        role: 'assistant', type: 'text',
+        text: '⚠️ Connection error. Please check the backend is running.',
+      }]);
+    } finally {
       setThinking(false);
-    }, 900 + Math.random() * 600);
+    }
   };
 
   const handleKey = (e) => {
@@ -60,9 +120,10 @@ export default function ChatWidget({ open, onClose }) {
   if (!open) return null;
 
   return (
-    <div className="fixed bottom-6 left-80 z-50 w-[380px] flex flex-col rounded-3xl shadow-[0_32px_80px_rgba(9,21,46,0.18)] border border-primary/10 overflow-hidden"
-      style={{ height: '520px' }}>
-
+    <div
+      className="fixed bottom-6 left-80 z-50 w-[420px] flex flex-col rounded-3xl shadow-[0_32px_80px_rgba(9,21,46,0.22)] border border-primary/10 overflow-hidden"
+      style={{ height: '560px' }}
+    >
       {/* Header */}
       <div className="bg-primary px-6 py-4 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-3">
@@ -70,10 +131,10 @@ export default function ChatWidget({ open, onClose }) {
             <span className="material-symbols-outlined text-tertiary-fixed text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>auto_awesome</span>
           </div>
           <div>
-            <p className="text-white font-bold text-sm font-headline">KEYSER Co-Pilot</p>
+            <p className="text-white font-bold text-sm font-headline">KEYSER AI Copilot</p>
             <span className="text-[10px] text-green-400 font-bold flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse inline-block" />
-              Online · Mock mode
+              Online · Gemma 3:4B
             </span>
           </div>
         </div>
@@ -91,12 +152,12 @@ export default function ChatWidget({ open, onClose }) {
                 <span className="material-symbols-outlined text-tertiary-fixed text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>auto_awesome</span>
               </div>
             )}
-            <div className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed font-body ${
+            <div className={`max-w-[85%] px-4 py-3 rounded-2xl text-sm leading-relaxed font-body ${
               m.role === 'user'
                 ? 'bg-primary text-white rounded-tr-sm'
                 : 'bg-white text-on-surface border border-primary/5 rounded-tl-sm'
             }`}>
-              {m.text}
+              {m.type === 'card' ? <CopilotCard data={m.data} /> : m.text}
             </div>
           </div>
         ))}
@@ -107,7 +168,7 @@ export default function ChatWidget({ open, onClose }) {
               <span className="material-symbols-outlined text-tertiary-fixed text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>auto_awesome</span>
             </div>
             <div className="bg-white border border-primary/5 rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-1.5">
-              {[0,1,2].map(j => (
+              {[0, 1, 2].map(j => (
                 <span key={j} className="w-1.5 h-1.5 rounded-full bg-primary/30 animate-bounce"
                   style={{ animationDelay: `${j * 150}ms` }} />
               ))}
@@ -119,8 +180,8 @@ export default function ChatWidget({ open, onClose }) {
 
       {/* Quick prompts */}
       <div className="bg-white px-4 pt-3 pb-2 flex gap-2 overflow-x-auto flex-shrink-0 border-t border-primary/5">
-        {['Zepto pricing', 'Swiggy ads', 'Blinkit hiring', 'Generate brief'].map(q => (
-          <button key={q} onClick={() => { setInput(q); }}
+        {QUICK_PROMPTS.map(q => (
+          <button key={q} onClick={() => setInput(q)}
             className="text-[10px] font-bold text-primary whitespace-nowrap px-3 py-1.5 rounded-full bg-surface-container-low border border-outline-variant/30 hover:border-primary/30 transition-colors flex-shrink-0">
             {q}
           </button>
@@ -131,10 +192,11 @@ export default function ChatWidget({ open, onClose }) {
       <div className="bg-white px-4 pb-4 pt-2 flex gap-2 flex-shrink-0">
         <input
           className="flex-1 bg-surface-container-low rounded-xl px-4 py-2.5 text-sm font-body text-on-surface placeholder-on-surface-variant/40 border border-outline-variant/20 focus:outline-none focus:border-primary/30 transition-colors"
-          placeholder="Ask about competitors..."
+          placeholder="Ask about competitors, pricing, strategy…"
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={handleKey}
+          disabled={thinking}
         />
         <button
           onClick={send}
