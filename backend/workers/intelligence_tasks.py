@@ -12,9 +12,20 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from extensions import celery, db
 from app import create_app
 from services.pipelines.insight_pipeline import process_snapshot_for_insights
-from services.intelligence.triangulation_engine import triangulate_signals_for_competitor
+from services.pipelines.fusion_pipeline import FusionPipeline
 
 logger = logging.getLogger(__name__)
+
+@celery.task(name='intelligence.run_fusion_intelligence')
+def run_fusion_intelligence_task(competitor_id: int):
+    """
+    Celery task to run the multi-source OSINT fusion pipeline.
+    """
+    app = create_app()
+    with app.app_context():
+        logger.info(f"Starting Celery task: OSINT Fusion for competitor {competitor_id}")
+        pipeline = FusionPipeline()
+        return pipeline.run_triangulation(competitor_id)
 
 @celery.task(name='intelligence.generate_insights_for_snapshot')
 def generate_insights_for_snapshot_task(snapshot_id: int):
@@ -32,7 +43,9 @@ def triangulate_signals_task(competitor_id: int, window_hours: int = 48):
     """
     Periodic Celery task to group diffs and generate higher-confidence insights.
     """
-    with flask_app.app_context():
+    from services.intelligence.triangulation_engine import triangulate_signals_for_competitor
+    app = create_app()
+    with app.app_context():
         logger.info(f"Triangulating signals for competitor {competitor_id}")
         return triangulate_signals_for_competitor(competitor_id, window_hours)
 
