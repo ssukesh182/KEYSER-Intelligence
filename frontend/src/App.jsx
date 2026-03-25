@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import AuthPage from './pages/AuthPage';
 import LandingPage from './pages/LandingPage';
 import Dashboard from './pages/Dashboard';
 import WebsiteChanges from './pages/WebsiteChanges';
@@ -10,9 +11,18 @@ import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState('landing');
+  const [currentPage, setCurrentPage] = useState('auth');
 
-  // If landing page, just render it without the Sidebar layout
+  // Auth page — no sidebar/header
+  if (currentPage === 'auth') {
+    return (
+      <div className="bg-background font-body text-on-surface flex flex-col min-h-screen">
+        <AuthPage onLogin={() => setCurrentPage('dashboard')} />
+      </div>
+    );
+  }
+
+  // Landing/marketing page — no sidebar
   if (currentPage === 'landing') {
     return (
       <div className="bg-background font-body text-on-surface flex flex-col min-h-screen selection:bg-tertiary-fixed selection:text-on-tertiary-fixed">
