@@ -59,12 +59,13 @@ export default function Sidebar({ currentPage, onNavigate }) {
           </button>
 
           <div className="space-y-1">
-            <a className="flex items-center gap-3 px-4 py-2 text-on-surface-variant/70 text-xs font-semibold hover:text-primary transition-colors" href="#">
-              <span className="material-symbols-outlined text-lg">settings</span>Settings
-            </a>
-            <a className="flex items-center gap-3 px-4 py-2 text-on-surface-variant/70 text-xs font-semibold hover:text-primary transition-colors" href="#">
-              <span className="material-symbols-outlined text-lg">help_outline</span>Support
-            </a>
+          <a
+            className={`flex items-center gap-3 px-4 py-2 text-xs font-semibold transition-colors ${currentPage === 'settings' ? 'text-primary' : 'text-on-surface-variant/70 hover:text-primary'}`}
+            href="#"
+            onClick={(e) => { e.preventDefault(); onNavigate('settings'); }}
+          >
+            <span className="material-symbols-outlined text-lg">settings</span>Settings
+          </a>
           </div>
         </div>
       </aside>
