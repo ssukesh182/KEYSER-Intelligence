@@ -1,197 +1,277 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 const COMPETITORS = [
-  { id: 'zepto', name: 'Zepto', tagline: 'Quick commerce leader, 10-min delivery' },
-  { id: 'swiggy', name: 'Swiggy', tagline: 'Food + Instamart dual-vertical powerhouse' },
-  { id: 'blinkit', name: 'Blinkit', tagline: 'Zomato-backed rapid grocery expansion' },
+  { id: 'Zepto',  name: 'Zepto',  color: '#535e7b' },
+  { id: 'Swiggy', name: 'Swiggy', color: '#1F2A44' },
+  { id: 'Blinkit',name: 'Blinkit',color: '#b45309' },
 ];
 
-const BASE_DATA = {
-  zepto: {
-    heroTitle: "Zepto Edge Analysis",
-    radarFocusTitle: "Q4 Hyper-Local Expansion Analysis",
-    polyFill: "rgba(83, 94, 123, 0.4)",
-    polyStroke: "#535e7b",
-    polyPoints: "250,50 360,160 380,300 250,440 120,300 140,160",
-    insights: [
-      { tag: "SPEED OPTIMIZATION", tagColor: "bg-primary/5 text-primary text-[10px]", conf: "81%", title: "Hyper-Local Micro-Warehousing", 
-        desc: "Zepto is currently vulnerable in the 8-minute delivery window for suburbs. AI predicts a 22% conversion lift via micro-hubs in Sector 4 & 9.",
-        borderColor: "border-primary", impactBars: 3, maxBars: 5, barColor: "bg-primary" },
-      { tag: "CATEGORY WHITE SPACE", tagColor: "bg-tertiary-fixed/30 text-tertiary", conf: "89%", title: "Direct-to-Consumer Niche Brands", 
-        desc: "Competitors focus on FMCG mainstays. Onboarding D2C beauty and wellness brands creates an immediate moat for high-AOV millennial shoppers.",
-        borderColor: "border-tertiary", impactBars: 4, maxBars: 5, barColor: "bg-tertiary" },
-      { tag: "CRITICAL RISK", tagColor: "bg-error/5 text-error", conf: "67%", title: "Support Elasticity Gap", 
-        desc: "Manual support overhead is increasing while NPS drops. Suggesting immediate implementation of sovereign LLM nodes for Tier-1 resolution.",
-        borderColor: "border-error", impactBars: 2, maxBars: 5, barColor: "bg-error" }
-    ]
-  },
-  swiggy: {
-    heroTitle: "Swiggy Edge Analysis",
-    radarFocusTitle: "Omnichannel Engagement Analysis",
-    polyFill: "rgba(31, 42, 68, 0.4)",
-    polyStroke: "#1F2A44",
-    polyPoints: "250,80 380,200 350,350 250,420 150,320 100,200",
-    insights: [
-      { tag: "STRATEGIC GAP", tagColor: "bg-tertiary-fixed/30 text-tertiary", conf: "94%", title: "Sustainable Packaging Pivot", 
-        desc: "Current competitors score below 4.2 in eco-compliance. Transitioning to 100% biodegradable fiber creates immediate authority in Tier-1 demographics.",
-        borderColor: "border-tertiary", impactBars: 4, maxBars: 5, barColor: "bg-tertiary" },
-      { tag: "LOYALTY LEVERAGE", tagColor: "bg-primary/5 text-primary", conf: "88%", title: "Cross-Vertical Gamification", 
-        desc: "Swiggy One members show a 14% drop in food delivery when Instamart orders peak. Gamifying cross-vertical streaks can bridge this engagement gap.",
-        borderColor: "border-primary", impactBars: 3, maxBars: 5, barColor: "bg-primary" },
-      { tag: "OPERATIONAL DRAG", tagColor: "bg-error/5 text-error", conf: "72%", title: "Peak-Hour Fleet Utilization", 
-        desc: "Rider idle time during the 3PM-5PM dip is burning capital. Suggesting dynamic 'Happy Hour' discounts on slow-moving inventory.",
-        borderColor: "border-error", impactBars: 3, maxBars: 5, barColor: "bg-error" }
-    ]
-  },
-  blinkit: {
-    heroTitle: "Blinkit Edge Analysis",
-    radarFocusTitle: "Category Diversification Analysis",
-    polyFill: "rgba(251, 191, 36, 0.3)", // Amber
-    polyStroke: "#b45309",
-    polyPoints: "250,110 400,250 380,380 250,440 80,300 60,150",
-    insights: [
-      { tag: "ASSORTMENT EXPANSION", tagColor: "bg-amber-100 text-amber-700", conf: "91%", title: "High-Margin Electronics Add-ons", 
-        desc: "While Blinkit sells phones, accessories attachment rate is low. Recommending auto-bundling screen protectors and cases at checkout.",
-        borderColor: "border-amber-500", impactBars: 4, maxBars: 5, barColor: "bg-amber-500" },
-      { tag: "UX FRICTION", tagColor: "bg-error/5 text-error", conf: "85%", title: "Print-to-Digital Drop-off", 
-        desc: "QR code scans from physical billboards have a 40% bounce rate on the landing page due to slow initial load times on low-end devices.",
-        borderColor: "border-error", impactBars: 4, maxBars: 5, barColor: "bg-error" },
-      { tag: "EMERGENT TREND", tagColor: "bg-tertiary-fixed/30 text-tertiary", conf: "78%", title: "Pet Supply Subscription", 
-        desc: "Repeat orders for pet food happen every 21 days. A 'Subscribe & Save' feature specifically for this category could lock in ₹12Cr MRR.",
-        borderColor: "border-tertiary", impactBars: 3, maxBars: 5, barColor: "bg-tertiary" }
-    ]
-  }
+const DIMENSIONS = ['speed', 'range', 'price', 'experience', 'support', 'sustainability'];
+const DIM_LABELS  = {
+  speed:          'Speed',
+  range:          'Range',
+  price:          'Price',
+  experience:     'Experience',
+  support:        'Support',
+  sustainability: 'Eco',
 };
 
+// Radar geometry: 6 axes, evenly spread
+const CX = 250, CY = 250, R_MAX = 190;
+const ANGLES = DIMENSIONS.map((_, i) => (Math.PI * 2 * i) / DIMENSIONS.length - Math.PI / 2);
+
+function radarPoint(score, axisIndex) {
+  const r = (score / 100) * R_MAX;
+  return {
+    x: CX + r * Math.cos(ANGLES[axisIndex]),
+    y: CY + r * Math.sin(ANGLES[axisIndex]),
+  };
+}
+
+function buildPolygon(scores) {
+  return DIMENSIONS.map((dim, i) => {
+    const { x, y } = radarPoint(scores[dim] ?? 5, i);
+    return `${x},${y}`;
+  }).join(' ');
+}
+
+function axisEnd(i) {
+  return {
+    x: CX + R_MAX * Math.cos(ANGLES[i]),
+    y: CY + R_MAX * Math.sin(ANGLES[i]),
+  };
+}
+
+const TAG_COLORS = {
+  'SPEED WHITESPACE': 'bg-blue-100 text-blue-700',
+  'CATEGORY GAP':     'bg-purple-100 text-purple-700',
+  'VALUE SIGNAL':     'bg-green-100 text-green-700',
+  'UX OPPORTUNITY':   'bg-indigo-100 text-indigo-700',
+  'CRITICAL RISK':    'bg-red-100 text-red-700',
+  'EMERGENT TREND':   'bg-amber-100 text-amber-700',
+};
+
+const BORDER_COLORS = {
+  'SPEED WHITESPACE': 'border-blue-400',
+  'CATEGORY GAP':     'border-purple-400',
+  'VALUE SIGNAL':     'border-green-400',
+  'UX OPPORTUNITY':   'border-indigo-400',
+  'CRITICAL RISK':    'border-red-400',
+  'EMERGENT TREND':   'border-amber-400',
+};
+
+const SEED_SCORES = {
+  Zepto:  { speed: 82, range: 58, price: 44, experience: 71, support: 38, sustainability: 18 },
+  Swiggy: { speed: 67, range: 74, price: 61, experience: 79, support: 55, sustainability: 27 },
+  Blinkit:{ speed: 73, range: 81, price: 52, experience: 65, support: 42, sustainability: 21 },
+};
+
+const SEED_ANGLES = [
+  { tag: 'EMERGENT TREND',  title: 'Eco-Conscious Positioning', opportunity_score: 91, impact: 5,
+    description: 'Competitors average only 22/100 on sustainability signals. Eco-delivery, biodegradable packaging, and EV fleets are almost entirely unclaimed territory for urban millennials.' },
+  { tag: 'CRITICAL RISK',   title: 'Support Experience Deficit', opportunity_score: 84, impact: 4,
+    description: 'Support quality scores 45/100 across the board. Manual resolution dominates — deploying LLM-based Tier-1 resolution could reduce handle time 40% and push NPS above 70.' },
+  { tag: 'CATEGORY GAP',    title: 'Premium Niche Assortment',  opportunity_score: 77, impact: 4,
+    description: 'Average category-depth score is 55/100. No competitor strongly owns gourmet, pet, or specialty verticals — a curated premium catalogue creates immediate differentiation.' },
+];
+
 export default function WhitespaceRadar() {
-  const [activeTab, setActiveTab] = useState('swiggy');
-  const d = COMPETITORS.find(c => c.id === activeTab);
-  const data = BASE_DATA[activeTab];
+  const [activeTab,   setActiveTab]   = useState('Zepto');
+  const [scores,      setScores]      = useState(SEED_SCORES);
+  const [angles,      setAngles]      = useState(SEED_ANGLES);
+  const [loading,     setLoading]     = useState(false);
+  const [error,       setError]       = useState(null);
+  const [lastUpdated, setLastUpdated] = useState(null);
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/whitespace/');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      if (json.success && json.data) {
+        if (json.data.scores && Object.keys(json.data.scores).length)
+          setScores(json.data.scores);
+        if (json.data.angles?.length) setAngles(json.data.angles);
+        setLastUpdated(new Date().toLocaleTimeString());
+      }
+    } catch (e) {
+      setError(e.message);
+      // Keep seed data visible even on error
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  const activeScores  = scores[activeTab] || SEED_SCORES[activeTab];
+  const activeComp    = COMPETITORS.find(c => c.id === activeTab);
+  const polyPoints    = buildPolygon(activeScores);
+
+  // Whitespace zones: lowest-scored dimension for the active competitor
+  const lowestDim  = DIMENSIONS.reduce((a, b) => (activeScores[a] ?? 100) < (activeScores[b] ?? 100) ? a : b);
+  const lowestIdx  = DIMENSIONS.indexOf(lowestDim);
+  const wsEnd      = axisEnd(lowestIdx);
 
   return (
-    <>
-      <div className="p-12 flex gap-12 w-full max-w-[1600px] mx-auto">
-        {/*  Center Radar Column  */}
-        <section className="flex-1">
-          <div className="mb-8">
-            <div className="flex items-center gap-3 mb-2">
-              <span className="bg-tertiary-fixed/20 text-tertiary px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest">Market Intel</span>
-              <span className="text-on-surface-variant text-sm font-medium tracking-tight">{data.radarFocusTitle}</span>
-            </div>
-            <h1 className="font-headline text-5xl font-extrabold text-primary tracking-tight leading-tight">{data.heroTitle}</h1>
-          </div>
+    <div className="p-12 flex gap-10 w-full max-w-[1600px] mx-auto">
+      {/* ── Center Radar Column ── */}
+      <section className="flex-1 min-w-0">
+        <div className="mb-8">
+          <span className="bg-tertiary-fixed/20 text-tertiary px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest">
+            Live Market Intel
+          </span>
+          <h1 className="font-headline text-5xl font-extrabold text-primary tracking-tight leading-tight mt-2">
+            Whitespace Radar
+          </h1>
+          <p className="text-sm text-on-surface-variant mt-1">
+            Quantitative opportunity scores from hiring signals, snapshots &amp; Reddit demand.
+          </p>
+        </div>
 
-          {/* Competitor tabs */}
-          <div className="flex items-center gap-3 mb-10">
-            {COMPETITORS.map((c) => (
-              <button key={c.id} onClick={() => setActiveTab(c.id)}
-                className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all duration-200 ${activeTab === c.id ? 'bg-primary text-white shadow-md scale-105' : 'bg-white text-on-surface-variant border border-outline-variant/30 hover:border-primary/30 hover:text-primary'}`}>
-                {c.name}
-              </button>
-            ))}
-            <span className="ml-3 text-xs text-on-surface-variant/50 font-body">{d.tagline}</span>
-          </div>
-
-          {/*  Radar Visualization Container  */}
-          <div className="relative w-full aspect-square max-w-3xl mx-auto flex items-center justify-center p-12 bg-white rounded-3xl shadow-sm border border-outline-variant/10">
-            {/*  SVG Radar Chart  */}
-            <svg className="w-full h-full drop-shadow-2xl overflow-visible transition-all duration-700" viewBox="0 0 500 500">
-              {/*  Concentric Circles  */}
-              <circle cx="250" cy="250" fill="none" r="50" stroke="#f2f3ff" strokeWidth="1"></circle>
-              <circle cx="250" cy="250" fill="none" r="100" stroke="#f2f3ff" strokeWidth="1"></circle>
-              <circle cx="250" cy="250" fill="none" r="150" stroke="#f2f3ff" strokeWidth="1"></circle>
-              <circle cx="250" cy="250" fill="none" r="200" stroke="#f2f3ff" strokeWidth="1"></circle>
-              
-              {/*  Axis Lines  */}
-              <line stroke="#f2f3ff" strokeWidth="1" x1="250" x2="250" y1="50" y2="450"></line>
-              <line stroke="#f2f3ff" strokeWidth="1" x1="76" x2="424" y1="150" y2="350"></line>
-              <line stroke="#f2f3ff" strokeWidth="1" x1="76" x2="424" y1="350" y2="150"></line>
-              
-              {/*  Whitespace Gold Zones (Highlights)  */}
-              <path d="M250,50 L350,150 L250,250 Z" fill="#ffe08e" fillOpacity="0.15" stroke="#C9A227" strokeDasharray="4,2" strokeWidth="2"></path>
-              <path d="M250,450 L150,350 L250,250 Z" fill="#ffe08e" fillOpacity="0.15" stroke="#C9A227" strokeDasharray="4,2" strokeWidth="2"></path>
-              
-              {/*  Dynamic Competitor Active Overlay  */}
-              <polygon fill={data.polyFill} points={data.polyPoints} stroke={data.polyStroke} strokeWidth="2" className="transition-all duration-700 delay-100"></polygon>
-              
-              {/*  Data Point Glow nodes  */}
-              {data.polyPoints.split(' ').map((pt, i) => (
-                <circle key={i} cx={pt.split(',')[0]} cy={pt.split(',')[1]} fill={data.polyStroke} r="4" className="transition-all duration-700"></circle>
-              ))}
-            </svg>
-            
-            {/*  Axis Labels  */}
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 text-[10px] font-label font-bold tracking-widest uppercase text-primary">Speed</div>
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-[10px] font-label font-bold tracking-widest uppercase text-primary">Range</div>
-            <div className="absolute top-1/4 right-0 translate-x-4 text-[10px] font-label font-bold tracking-widest uppercase text-primary">Price</div>
-            <div className="absolute bottom-1/4 right-0 translate-x-4 text-[10px] font-label font-bold tracking-widest uppercase text-primary">Packaging</div>
-            <div className="absolute top-1/4 left-0 -translate-x-4 text-[10px] font-label font-bold tracking-widest uppercase text-primary">Experience</div>
-            <div className="absolute bottom-1/4 left-0 -translate-x-4 text-[10px] font-label font-bold tracking-widest uppercase text-primary">Support</div>
-            
-            {/*  Legend Floating Panel  */}
-            <div className="absolute bottom-8 right-8 glass-panel p-6 rounded-2xl shadow-xl border border-white/50 space-y-3 min-w-[180px]">
-              <h4 className="text-[10px] font-label font-black text-primary/40 uppercase tracking-widest mb-2">Market Legend</h4>
-              <div className="flex items-center gap-3">
-                <span className="w-3 h-3 rounded-sm bg-[#1F2A44]"></span>
-                <span className="text-xs font-semibold text-primary">Swiggy</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="w-3 h-3 rounded-sm bg-[#535e7b]"></span>
-                <span className="text-xs font-semibold text-primary">Zepto</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="w-3 h-3 rounded-sm bg-amber-400"></span>
-                <span className="text-xs font-semibold text-primary">Blinkit</span>
-              </div>
-              <div className="pt-2 border-t border-primary/5">
-                <div className="flex items-center gap-3">
-                  <span className="w-3 h-3 rounded-sm bg-tertiary-fixed border border-[#C9A227] border-dashed"></span>
-                  <span className="text-xs font-bold text-tertiary">Whitespace Zone</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/*  Right Insights Column  */}
-        <section className="w-[400px] flex flex-col pt-4">
-          <div className="flex items-center justify-between mb-8 pb-4">
-            <h3 className="font-headline font-bold text-xl text-primary">AI-Generated Opportunities</h3>
-            <span className="material-symbols-outlined text-primary/30">auto_awesome</span>
-          </div>
-          <div className="space-y-6 flex-1 overflow-y-auto pr-2">
-            {data.insights.map((insight, i) => (
-              <div key={i} className={`bg-white p-6 rounded-2xl shadow-sm border-l-4 ${insight.borderColor} transition-transform duration-300 hover:-translate-y-1`}>
-                <div className="flex justify-between items-start mb-4">
-                  <div className={`${insight.tagColor} px-2 py-1 font-bold rounded uppercase`}>
-                    {insight.tag}
-                  </div>
-                  <div className="text-right">
-                    <div className="text-[10px] font-label uppercase text-primary/40 font-bold tracking-wider">Confidence</div>
-                    <div className={`text-lg font-headline font-extrabold leading-none ${insight.borderColor.includes('error') ? 'text-error' : 'text-primary'}`}>
-                      {insight.conf}
-                    </div>
-                  </div>
-                </div>
-                <h4 className="font-headline font-bold text-primary text-base mb-2">{insight.title}</h4>
-                <p className="text-sm text-on-surface-variant leading-relaxed mb-6">{insight.desc}</p>
-                <div className="flex items-center justify-between pt-4 border-t border-outline-variant/20">
-                  <span className="text-[10px] font-label font-bold text-primary/60 uppercase tracking-widest">Impact Score</span>
-                  <div className="flex gap-1">
-                    {[...Array(insight.maxBars)].map((_, j) => (
-                      <div key={j} className={`h-1.5 w-6 rounded-full ${j < insight.impactBars ? insight.barColor : 'bg-outline-variant/30'}`}></div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-          <button className="mt-8 group flex items-center justify-center gap-3 w-full py-4 border-2 border-primary/10 rounded-2xl text-primary font-bold hover:bg-primary hover:text-white transition-all duration-300">
-            Generate Deep-Dive Report
-            <span className="material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span>
+        {/* Competitor tabs */}
+        <div className="flex items-center gap-3 mb-8">
+          {COMPETITORS.map((c) => (
+            <button key={c.id} onClick={() => setActiveTab(c.id)}
+              className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all duration-200
+                ${activeTab === c.id ? 'bg-primary text-white shadow-md scale-105' 
+                  : 'bg-white text-on-surface-variant border border-outline-variant/30 hover:border-primary/30 hover:text-primary'}`}>
+              {c.name}
+            </button>
+          ))}
+          {loading && <span className="text-xs text-primary/50 animate-pulse ml-2">Fetching live data…</span>}
+          {lastUpdated && !loading && (
+            <span className="text-[10px] text-on-surface-variant/50 ml-2">Updated {lastUpdated}</span>
+          )}
+          <button onClick={fetchData} className="ml-auto flex items-center gap-1 text-[11px] font-bold text-primary/60 hover:text-primary transition bg-surface-container-low px-3 py-1.5 rounded-lg">
+            <span className={`material-symbols-outlined text-sm ${loading ? 'animate-spin' : ''}`}>refresh</span>
+            Refresh
           </button>
-        </section>
-      </div>
-    </>
+        </div>
+
+        {error && (
+          <div className="mb-4 text-xs text-amber-600 bg-amber-50 px-4 py-2 rounded-lg">
+            ⚠ Live data unavailable ({error}) — showing seed intelligence.
+          </div>
+        )}
+
+        {/* Radar SVG */}
+        <div className="relative w-full aspect-square max-w-3xl mx-auto flex items-center justify-center p-10 bg-white rounded-3xl shadow-sm border border-outline-variant/10">
+          <svg className="w-full h-full overflow-visible transition-all duration-700" viewBox="0 0 500 500">
+            {/* Concentric rings at 25/50/75/100% */}
+            {[0.25, 0.5, 0.75, 1.0].map((r, i) => (
+              <circle key={i} cx={CX} cy={CY} r={R_MAX * r}
+                fill="none" stroke="#f2f3ff" strokeWidth={i === 3 ? 1.5 : 1} />
+            ))}
+
+            {/* Axis lines */}
+            {DIMENSIONS.map((_, i) => {
+              const end = axisEnd(i);
+              return <line key={i} x1={CX} y1={CY} x2={end.x} y2={end.y} stroke="#e8eaf2" strokeWidth="1" />;
+            })}
+
+            {/* Whitespace highlight (lowest dim) */}
+            <line x1={CX} y1={CY} x2={wsEnd.x} y2={wsEnd.y}
+              stroke="#C9A227" strokeWidth="2.5" strokeDasharray="5,3" />
+            <circle cx={wsEnd.x} cy={wsEnd.y} r="6" fill="#ffe08e" stroke="#C9A227" strokeWidth="2" />
+
+            {/* Competitor polygon */}
+            <polygon
+              fill={activeComp.color + '33'}
+              stroke={activeComp.color}
+              strokeWidth="2"
+              points={polyPoints}
+              className="transition-all duration-700"
+            />
+            {/* Dot nodes */}
+            {DIMENSIONS.map((dim, i) => {
+              const { x, y } = radarPoint(activeScores[dim] ?? 5, i);
+              return <circle key={i} cx={x} cy={y} r="4" fill={activeComp.color} className="transition-all duration-700" />;
+            })}
+          </svg>
+
+          {/* Axis Labels */}
+          {DIMENSIONS.map((dim, i) => {
+            const end    = axisEnd(i);
+            const labelR = R_MAX + 22;
+            const lx     = CX + labelR * Math.cos(ANGLES[i]);
+            const ly     = CY + labelR * Math.sin(ANGLES[i]);
+            const isWS   = dim === lowestDim;
+            return (
+              <div key={dim}
+                className={`absolute text-[10px] font-black uppercase tracking-widest translate-x-[-50%] translate-y-[-50%] ${isWS ? 'text-amber-600' : 'text-primary'}`}
+                style={{ left: `${(lx / 500) * 100}%`, top: `${(ly / 500) * 100}%` }}>
+                {DIM_LABELS[dim]}
+                {isWS && <span className="block text-center text-[8px] text-amber-400">⚡ Gap</span>}
+              </div>
+            );
+          })}
+
+          {/* Score legend for active competitor */}
+          <div className="absolute top-6 left-6 bg-white/90 backdrop-blur p-4 rounded-2xl shadow border border-outline-variant/10 space-y-1.5 min-w-[130px]">
+            <h4 className="text-[9px] font-black uppercase tracking-widest text-primary/40 mb-2">Scores</h4>
+            {DIMENSIONS.map(dim => (
+              <div key={dim} className="flex items-center justify-between gap-3">
+                <span className="text-[10px] font-medium text-primary/60 capitalize">{DIM_LABELS[dim]}</span>
+                <span className="text-[10px] font-black text-primary">{activeScores[dim] ?? '—'}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Right Angle Cards ── */}
+      <section className="w-[400px] flex flex-col pt-[90px]">
+        <div className="flex items-center justify-between mb-6 pb-4 border-b border-outline-variant/20">
+          <h3 className="font-headline font-bold text-xl text-primary">AI Opportunities</h3>
+          <span className="material-symbols-outlined text-primary/30">auto_awesome</span>
+        </div>
+
+        <div className="space-y-5 flex-1 overflow-y-auto pr-1">
+          {angles.map((angle, i) => (
+            <div key={i}
+              className={`bg-white p-6 rounded-2xl shadow-sm border-l-4 ${BORDER_COLORS[angle.tag] || 'border-primary'} transition-transform duration-300 hover:-translate-y-1`}>
+              <div className="flex justify-between items-start mb-3">
+                <span className={`text-[10px] px-2 py-1 rounded font-bold uppercase ${TAG_COLORS[angle.tag] || 'bg-primary/5 text-primary'}`}>
+                  {angle.tag}
+                </span>
+                <div className="text-right">
+                  <div className="text-[9px] font-black uppercase text-primary/40 tracking-wider">Opportunity</div>
+                  <div className="text-xl font-black text-primary leading-none">{angle.opportunity_score}<span className="text-xs">%</span></div>
+                </div>
+              </div>
+              <h4 className="font-headline font-bold text-primary text-sm mb-2">{angle.title}</h4>
+              <p className="text-xs text-on-surface-variant leading-relaxed mb-4">{angle.description}</p>
+              {angle.market_context && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4">
+                  <span className="text-[9px] font-black uppercase text-amber-600 tracking-widest block mb-0.5">Tavily Market Signal</span>
+                  <p className="text-[10px] text-amber-800 leading-relaxed">{angle.market_context}</p>
+                </div>
+              )}
+              <div className="flex items-center justify-between pt-3 border-t border-outline-variant/20">
+                <span className="text-[9px] font-black uppercase text-primary/40 tracking-widest">Impact</span>
+                <div className="flex gap-1">
+                  {[1,2,3,4,5].map(j => (
+                    <div key={j} className={`h-1.5 w-5 rounded-full ${j <= angle.impact ? 'bg-primary' : 'bg-outline-variant/30'}`} />
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <button
+          onClick={fetchData}
+          className="mt-6 group flex items-center justify-center gap-3 w-full py-4 border-2 border-primary/10 rounded-2xl text-primary font-bold hover:bg-primary hover:text-white transition-all duration-300 text-sm"
+        >
+          <span className={`material-symbols-outlined ${loading ? 'animate-spin' : 'transition-transform group-hover:translate-x-1'}`}>
+            {loading ? 'refresh' : 'arrow_forward'}
+          </span>
+          {loading ? 'Analysing…' : 'Refresh Intelligence'}
+        </button>
+      </section>
+    </div>
   );
 }

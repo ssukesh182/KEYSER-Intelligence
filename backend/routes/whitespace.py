@@ -7,8 +7,8 @@ bp = Blueprint("whitespace", __name__, url_prefix="/api/whitespace")
 @bp.route("/", methods=["GET"])
 def get_whitespace():
     try:
-        angles = run_whitespace_radar()
-        return jsonify({"success": True, "data": angles})
+        result = run_whitespace_radar()
+        return jsonify({"success": True, "data": result})
     except Exception as e:
         traceback.print_exc()
         return jsonify({"success": False, "error": str(e)}), 500
