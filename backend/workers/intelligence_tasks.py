@@ -6,6 +6,7 @@ Currently runs external signal collection (Tavily, Reddit).
 import sys
 import os
 import logging
+from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -50,70 +51,100 @@ def triangulate_signals_task(competitor_id: int, window_hours: int = 48):
         return triangulate_signals_for_competitor(competitor_id, window_hours)
 
 @celery.task(bind=True, name="tasks.collect_tavily_signals", max_retries=2)
-def collect_tavily_signals_task(self, competitor_id: int, query: str = ""):
+def collect_tavily_signals_task(self, user_id: int, competitor_name: str, query: str = None):
     """
-    Celery task: Hit Tavily API for a competitor → store result as a Snapshot signal.
+    Celery task: Fetch Tavily (Search) signals for a competitor and store them.
     """
-    print(f"[INTELLIGENCE_TASK] collect_tavily_signals started for competitor_id={competitor_id}")
+    print(f"[TAVILY_TASK] collect_tavily_signals started for {competitor_name} (User: {user_id})")
     try:
+        db.engine.dispose()
         from integrations.tavily import fetch_tavily_signals
-        from models import Competitor
-
-        competitor = db.session.query(Competitor).get(competitor_id)
-        if not competitor:
-            print(f"[INTELLIGENCE_TASK] Competitor {competitor_id} not found")
-            return {"status": "error"}
-
-        results = fetch_tavily_signals(competitor.name, query=query)
-        print(f"[INTELLIGENCE_TASK] Tavily returned {len(results)} signals for {competitor.name}")
-        return {"status": "ok", "signals_collected": len(results)}
+        from models.review import RawReview
+        
+        results = fetch_tavily_signals(competitor_name, query=query)
+        
+        inserted = 0
+        for r in results:
+            exists = RawReview.query.filter_by(
+                user_id=user_id,
+                competitor_name=competitor_name,
+                source="serp_google",
+                review_text=r.get("content", "")[:2000]
+            ).first()
+            if not exists:
+                review = RawReview(
+                    user_id=user_id,
+                    competitor_name=competitor_name,
+                    source="serp_google",
+                    reviewer="Google Search",
+                    rating=3,
+                    review_text=r.get("content", "")[:2000],
+                    review_time=datetime.now(timezone.utc).isoformat()
+                )
+                db.session.add(review)
+                inserted += 1
+        
+        db.session.commit()
+        print(f"[TAVILY_TASK] Done — {inserted} new signals for {competitor_name}")
+        return {"status": "ok", "signals_collected": len(results), "inserted": inserted}
     except Exception as e:
-        print(f"[INTELLIGENCE_TASK] ERROR collect_tavily_signals: {e}")
-        try:
-            raise self.retry(exc=e)
-        except self.MaxRetriesExceededError:
-            return {"status": "failed", "error": str(e)}
+        print(f"[TAVILY_TASK] ERROR: {e}")
+        try: raise self.retry(exc=e)
+        except self.MaxRetriesExceededError: return {"status": "failed", "error": str(e)}
 
 
 @celery.task(bind=True, name="tasks.collect_reddit_signals", max_retries=2)
-def collect_reddit_signals_task(self, competitor_id: int):
+def collect_reddit_signals_task(self, user_id: int, competitor_name: str):
     """
-    Celery task: Scrape Reddit for mentions of a competitor → store as signals.
+    Celery task: Scrape Reddit for mentions of a competitor and store them.
     """
-    print(f"[INTELLIGENCE_TASK] collect_reddit_signals started for competitor_id={competitor_id}")
+    print(f"[REDDIT_TASK] collect_reddit_signals started for {competitor_name} (User: {user_id})")
     try:
+        db.engine.dispose()
         from integrations.reddit import fetch_reddit_mentions
-        from models import Competitor
+        from models.review import RawReview
 
-        competitor = db.session.query(Competitor).get(competitor_id)
-        if not competitor:
-            return {"status": "error"}
-
-        results = fetch_reddit_mentions(competitor.name)
-        print(f"[INTELLIGENCE_TASK] Reddit returned {len(results)} mentions for {competitor.name}")
-        return {"status": "ok", "mentions": len(results)}
+        results = fetch_reddit_mentions(competitor_name)
+        
+        inserted = 0
+        for r in results:
+            exists = RawReview.query.filter_by(
+                user_id=user_id,
+                competitor_name=competitor_name,
+                source="reddit",
+                reviewer=r.get("author", "anonymous"),
+                review_text=r.get("text", "")[:2000]
+            ).first()
+            if not exists:
+                review = RawReview(
+                    user_id=user_id,
+                    competitor_name=competitor_name,
+                    source="reddit",
+                    reviewer=r.get("author", "anonymous"),
+                    rating=3,
+                    review_text=r.get("text", "")[:2000],
+                    review_time=str(r.get("created_utc"))
+                )
+                db.session.add(review)
+                inserted += 1
+        
+        db.session.commit()
+        print(f"[REDDIT_TASK] Done — {inserted} new signals for {competitor_name}")
+        return {"status": "ok", "mentions": len(results), "inserted": inserted}
     except Exception as e:
-        print(f"[INTELLIGENCE_TASK] ERROR collect_reddit_signals: {e}")
-        try:
-            raise self.retry(exc=e)
-        except self.MaxRetriesExceededError:
-            return {"status": "failed", "error": str(e)}
+        print(f"[REDDIT_TASK] ERROR: {e}")
+        try: raise self.retry(exc=e)
+        except self.MaxRetriesExceededError: return {"status": "failed", "error": str(e)}
 
 
 @celery.task(bind=True, name="tasks.collect_hiring_signals", max_retries=2)
-def collect_hiring_signals_task(self, competitor_id: int):
+def collect_hiring_signals_task(self, user_id: int, competitor_name: str):
     """
-    Celery task: Fetch hiring signals from Apollo, Apify LinkedIn, and ArbeitNow
-    for a given competitor → upsert into hiring_signals table.
-    Gracefully skips sources that fail (no API key, rate-limit, etc.).
+    Celery task: Fetch hiring signals for a given competitor → store as User signals.
     """
-    print(f"[HIRING_TASK] collect_hiring_signals started for competitor_id={competitor_id}")
+    print(f"[HIRING_TASK] collect_hiring_signals started for {competitor_name} (User: {user_id})")
     try:
-        # ── Fix: dispose stale connections inherited from the forked parent ──
         db.engine.dispose()
-
-        from models.competitor    import Competitor
-
         from models.hiring_signal import HiringSignal
         from integrations.jobs    import (
             fetch_apollo_signals,
@@ -121,31 +152,28 @@ def collect_hiring_signals_task(self, competitor_id: int):
             fetch_arbeitnow_signals,
         )
 
-        competitor = db.session.query(Competitor).get(competitor_id)
-        if not competitor:
-            print(f"[HIRING_TASK] Competitor {competitor_id} not found")
-            return {"status": "error"}
-
         all_signals = []
         for fetcher in [fetch_apollo_signals, fetch_linkedin_signals, fetch_arbeitnow_signals]:
             try:
-                all_signals.extend(fetcher(competitor.name))
+                all_signals.extend(fetcher(competitor_name))
             except Exception as fetch_err:
                 print(f"[HIRING_TASK] Fetcher {fetcher.__name__} failed: {fetch_err}")
 
         inserted = 0
         for sig in all_signals:
             try:
-                # Upsert: skip if same (competitor, source, role_title, posted_at) exists
-                exists = db.session.query(HiringSignal).filter_by(
-                    competitor_id=competitor_id,
+                # Upsert: skip if same (user_id, competitor, source, role_title, posted_at) exists
+                exists = HiringSignal.query.filter_by(
+                    user_id=user_id,
+                    competitor_name=competitor_name,
                     source=sig["source"],
                     role_title=sig["role_title"],
                     posted_at=sig.get("posted_at"),
                 ).first()
                 if not exists:
                     row = HiringSignal(
-                        competitor_id=competitor_id,
+                        user_id=user_id,
+                        competitor_name=competitor_name,
                         source=sig["source"],
                         role_title=sig["role_title"],
                         department=sig.get("department"),
@@ -159,7 +187,7 @@ def collect_hiring_signals_task(self, competitor_id: int):
                 print(f"[HIRING_TASK] Row insert error: {row_err}")
 
         db.session.commit()
-        print(f"[HIRING_TASK] Done — {inserted} new signals for {competitor.name}")
+        print(f"[HIRING_TASK] Done — {inserted} new signals for {competitor_name}")
         return {"status": "ok", "inserted": inserted, "total_fetched": len(all_signals)}
 
     except Exception as e:

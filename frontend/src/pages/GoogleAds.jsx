@@ -28,7 +28,9 @@ export default function GoogleAds() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
   const [fetchHistory, setFetchHistory] = useState([]);
-  const [selectedCompetitor, setSelectedCompetitor] = useState("All Competitors");
+  const [selectedCompetitor, setSelectedCompetitor] = useState(null);
+  const competitors = profile?.competitors || [];
+  const trackedCompetitors = profile?.tracked_competitors || [];
   
   const previousSnapshotsRef = useRef({});
   const [selectedAd, setSelectedAd] = useState(null);
@@ -42,8 +44,8 @@ export default function GoogleAds() {
       const results = await fetchSerpAds(token);
       
       let filtered = results;
-      if (selectedCompetitor !== "All Competitors") {
-        filtered = results.filter(ad => ad.competitor === selectedCompetitor);
+      if (selectedCompetitor) {
+        filtered = results.filter(ad => ad.competitor === selectedCompetitor || ad.competitor_name === selectedCompetitor);
       }
       
       setAds(filtered);
@@ -51,6 +53,10 @@ export default function GoogleAds() {
         const newHistory = [...prev, { time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), count: filtered.length }];
         return newHistory.slice(-5);
       });
+
+      if (!selectedCompetitor && competitors.length > 0) {
+        setSelectedCompetitor(competitors[0]);
+      }
     } catch (err) {
       console.error(err);
       setError(true);
@@ -59,25 +65,23 @@ export default function GoogleAds() {
     }
   };
 
-  useEffect(() => {
-    loadAds();
-  }, [selectedCompetitor, currentUser]);
+  useEffect(() => { loadAds(); }, [selectedCompetitor, currentUser]);
 
   const openComparisonModal = (ad) => {
     setSelectedAd(ad);
   };
 
-  const trackedCompetitors = profile?.tracked_competitors || [];
+  const toggleSort = () => { /* ... */ };
 
   return (
-    <div className="p-12 max-w-[1400px] mx-auto w-full relative">
-      <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-8">
-        <div className="max-w-2xl">
-          <h1 className="text-5xl font-headline font-extrabold tracking-tight text-primary mb-4 leading-tight">
-            Ad Intelligence <span className="text-tertiary-container">Sovereign Feed</span>
-          </h1>
-          <p className="text-lg text-primary/60 max-w-lg leading-relaxed">
-            Real-time monitoring of {profile?.company_name || 'your'}'s competitor creative strategies and positioning.
+    <div className="pt-28 px-12 pb-12 flex-1 max-w-[1400px] mx-auto w-full">
+      {/* Header */}
+      <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div>
+          <span className="text-xs font-bold uppercase tracking-[0.2em] text-tertiary-container mb-2 block">Acquisition Intel</span>
+          <h1 className="font-headline font-extrabold text-4xl text-primary tracking-tight mb-3">Google Ads Monitor</h1>
+          <p className="text-on-surface-variant max-w-2xl text-sm leading-relaxed">
+            Real-time monitoring of {profile?.company_name || 'your'} competitor creative strategies and positioning.
           </p>
         </div>
         <div className="flex gap-4 items-center self-start md:self-end">

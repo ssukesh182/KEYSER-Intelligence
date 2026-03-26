@@ -18,6 +18,7 @@ import models  # noqa — import all models so SQLAlchemy can see them
 def create_app():
     print("[APP] Creating Flask application")
     app = Flask(__name__)
+    app.url_map.strict_slashes = False
 
     # ── Config ────────────────────────────────────────────────
     app.config["SQLALCHEMY_DATABASE_URI"]        = DATABASE_URL

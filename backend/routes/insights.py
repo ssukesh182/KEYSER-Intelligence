@@ -1,26 +1,38 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, g
 from extensions import db
 from models     import Insight, InsightSource, Competitor
+from utils.auth import require_auth
 
 bp = Blueprint("insights", __name__, url_prefix="/api/insights")
 
 
 @bp.route("", methods=["GET"])
+@require_auth
 def list_insights():
     """
     GET /api/insights
     Query params: competitor_id, category, min_confidence, limit
     """
-    print("[ROUTE] GET /api/insights")
+    from models.user import UserCompetitor
+    user = g.user
+    
     try:
         competitor_id  = request.args.get("competitor_id", type=int)
         category       = request.args.get("category")
         min_confidence = request.args.get("min_confidence", 0.0, type=float)
         limit          = request.args.get("limit", 50, type=int)
 
-        q = db.session.query(Insight).order_by(
+        # Base query joining with Competitor to allow filtering by name or user preference
+        q = db.session.query(Insight).join(Competitor).order_by(
             Insight.confidence.desc(), Insight.created_at.desc()
         )
+
+        # If user is onboarded, filter by their tracked competitors by default
+        if user.is_onboarded:
+            user_comps = UserCompetitor.query.filter_by(user_id=user.id).all()
+            comp_names = [c.competitor_name for c in user_comps]
+            if comp_names:
+                q = q.filter(Competitor.name.in_(comp_names))
 
         if competitor_id:
             q = q.filter(Insight.competitor_id == competitor_id)

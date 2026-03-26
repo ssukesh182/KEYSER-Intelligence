@@ -17,10 +17,11 @@ def get_ads():
     if not existing:
         # Initial fetch
         user_comps = UserCompetitor.query.filter_by(user_id=user.id).all()
-        api_key = os.environ.get("SERP_API_KEY", os.environ.get("VITE_SERP_API_KEY", ""))
+        api_key = os.environ.get("SERPAPI_KEY", os.environ.get("VITE_SERP_API_KEY", ""))
         
         for c in user_comps:
-            query = f"{c.competitor_name} grocery delivery ads"
+            cat = user.category or ""
+            query = f"{c.competitor_name} {cat} ads".strip()
             params = {
                 "engine": "google",
                 "q": query,

@@ -51,4 +51,4 @@ class HiringSignal(db.Model):
         return f"{days // 30} month{'s' if days // 30 > 1 else ''} ago"
 
     def __repr__(self):
-        return f"<HiringSignal {self.competitor_id}/{self.source}: {self.role_title[:40]}>"
+        return f"<HiringSignal {self.user_id}/{self.source}: {self.role_title[:40]}>"

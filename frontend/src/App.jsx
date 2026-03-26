@@ -3,7 +3,6 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import LandingPage from './pages/LandingPage';
 import OnboardingFlow from './pages/OnboardingFlow';
 import Dashboard from './pages/Dashboard';
-import WebsiteChanges from './pages/WebsiteChanges';
 import GoogleAds from './pages/GoogleAds';
 import AppReviews from './pages/AppReviews';
 import HiringIntelligence from './pages/HiringIntelligence';
@@ -41,7 +40,6 @@ function AppContent() {
   const renderInnerPage = () => {
     switch (currentPage) {
       case 'dashboard': return <Dashboard timeWindow={timeWindow} sortBy={sortBy} />;
-      case 'website_changes': return <WebsiteChanges />;
       case 'google_ads': return <GoogleAds />;
       case 'app_reviews': return <AppReviews />;
       case 'hiring': return <HiringIntelligence />;

@@ -69,6 +69,13 @@ def hiring_stats():
         "total": len(signals),
     }})
 
+def fetch_serp_reviews(user_id, competitors):
+    api_key = SERPAPI_KEY
+    # This function would contain logic to fetch reviews using the API key
+    # and potentially trigger tasks for each competitor.
+    # For now, it's just a placeholder as per the user's request.
+    pass
+
 @bp.route("/refresh", methods=["POST"])
 @require_auth
 def refresh_hiring_signals():
@@ -79,8 +86,6 @@ def refresh_hiring_signals():
     # In a real system, we'd pass user_id to the task
     from workers.intelligence_tasks import collect_hiring_signals_task
     for c in user_comps:
-        # Note: We need to update the task to handle user_id and names instead of global IDs
-        # For now, we simulate success
-        pass
+        collect_hiring_signals_task.delay(user.id, c.competitor_name)
 
     return jsonify({"success": True, "message": f"Refreshed signals for {len(user_comps)} competitors."})

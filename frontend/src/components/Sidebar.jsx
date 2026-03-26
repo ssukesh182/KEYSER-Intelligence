@@ -20,10 +20,6 @@ export default function Sidebar({ currentPage, onNavigate }) {
             onClick={(e) => { e.preventDefault(); onNavigate("dashboard"); }}>
             <span className="material-symbols-outlined">dashboard</span>Overview
           </a>
-          <a className={currentPage === 'website_changes' ? activeClass : inactiveClass} href="#"
-            onClick={(e) => { e.preventDefault(); onNavigate("website_changes"); }}>
-            <span className="material-symbols-outlined">update</span>Website Changes
-          </a>
           <a className={currentPage === 'google_ads' ? activeClass : inactiveClass} href="#"
             onClick={(e) => { e.preventDefault(); onNavigate("google_ads"); }}>
             <span className="material-symbols-outlined">ads_click</span>Google Ads

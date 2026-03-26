@@ -57,7 +57,11 @@ def fetch_serp_reviews(user_id, competitors):
 # ──────────────────────────────────────────────────────────────────────────────
 # 2. Reddit API Reviews
 # ──────────────────────────────────────────────────────────────────────────────
-def fetch_reddit_reviews(user_id, competitors):
+def fetch_reddit_reviews(user_id=None, competitors=None):
+    if competitors is None:
+        # Global fallback or empty
+        competitors = []
+    
     if not competitors: return []
     query = " OR ".join(competitors)
     url = "https://www.reddit.com/r/india+bangalore+chennai+grocerydelivery/search.json"
@@ -86,21 +90,36 @@ def fetch_reddit_reviews(user_id, competitors):
                     comp_name = c
                     break
             
-            review = RawReview(
-                user_id=user_id,
-                competitor_name=comp_name,
-                source="reddit",
-                reviewer=p.get("author"),
-                rating=3,
-                review_text=text[:2000],
-                review_time=str(p.get("created_utc"))
-            )
-            db.session.add(review)
-            normalized.append(review)
-        db.session.commit()
+            if user_id:
+                review = RawReview(
+                    user_id=user_id,
+                    competitor_name=comp_name,
+                    source="reddit",
+                    reviewer=p.get("author"),
+                    rating=3,
+                    review_text=text[:2000],
+                    review_time=str(p.get("created_utc"))
+                )
+                db.session.add(review)
+            
+            normalized.append({
+                "source": "reddit",
+                "competitor": comp_name,
+                "reviewer": p.get("author"),
+                "rating": 3,
+                "review_text": text[:2000],
+                "review_time": str(p.get("created_utc"))
+            })
+        if user_id:
+            db.session.commit()
     except Exception as e:
         logger.error(f"[Reddit] Error: {e}")
     return normalized
+
+def fetch_trustpilot_reviews(user_id=None, competitors=None):
+    """Stub for Trustpilot reviews (to be implemented)."""
+    logger.info("[Trustpilot] Stub called. No implementation yet.")
+    return []
 
 # ──────────────────────────────────────────────────────────────────────────────
 # 3. Master Aggregation API with Persistence 

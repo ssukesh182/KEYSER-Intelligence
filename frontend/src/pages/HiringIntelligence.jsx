@@ -9,7 +9,20 @@ async function apiFetch(path, token) {
   return res.json();
 }
 
-// ... constants ...
+const DEPT_COLORS = {
+  Engineering:  '#4F63D2',
+  Product:      '#C9A227',
+  Operations:   '#2CA87F',
+  Marketing:    '#E97B3B',
+  Design:       '#A259FF',
+  Finance:      '#3AB5E5',
+  People:       '#E95B8A',
+  Sales:        '#7AC943',
+  Legal:        '#6B7280',
+  Strategy:     '#9CA3AF',
+};
+const SOURCE_LABELS = { linkedin: 'LinkedIn', apollo: 'Apollo.io', arbeitnow: 'ArbeitNow', seed: 'Seeded' };
+const SOURCE_COLORS = { linkedin: '#0A66C2', apollo: '#B44DED', arbeitnow: '#F97316', seed: '#6B7280' };
 
 export default function HiringIntelligence() {
   const { currentUser } = useAuth();

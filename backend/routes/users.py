@@ -2,8 +2,16 @@ import logging
 from flask import Blueprint, request, jsonify, g
 from extensions import db
 from models.user import User, UserCompetitor
+from models.competitor import Competitor
+from models.source import Source
 from utils.auth import require_auth
 from services.llm.ollama_client import OllamaClient
+from workers.tasks import scrape_source_task
+from workers.intelligence_tasks import (
+    collect_tavily_signals_task,
+    collect_reddit_signals_task,
+    collect_hiring_signals_task
+)
 import json
 
 bp = Blueprint("users", __name__, url_prefix="/api/users")
@@ -17,10 +25,14 @@ def sync_user():
     Returns onboarding status.
     """
     user = g.user
+    user_comps = UserCompetitor.query.filter_by(user_id=user.id).all()
+    comp_names = [c.competitor_name for c in user_comps]
     return jsonify({
         "profile_complete": user.is_onboarded,
         "email": user.email,
-        "company_name": user.company_name
+        "company_name": user.company_name,
+        "competitors": comp_names,
+        "tracked_competitors": [{"name": c} for c in comp_names]
     })
 
 @bp.route("/profile", methods=["POST"])
@@ -46,12 +58,43 @@ def update_profile():
     UserCompetitor.query.filter_by(user_id=user.id).delete()
     
     for comp in tracked:
+        comp_name = comp.get("name")
+        comp_url = comp.get("url")
+        
         new_comp = UserCompetitor(
             user_id=user.id,
-            competitor_name=comp.get("name"),
-            competitor_url=comp.get("url")
+            competitor_name=comp_name,
+            competitor_url=comp_url
         )
         db.session.add(new_comp)
+        
+        # ── Global Activation (Phase 4 integration) ──
+        # Ensure this competitor exists globally so we can scrape/analyze it
+        global_comp = Competitor.query.filter_by(name=comp_name).first()
+        if not global_comp:
+            global_comp = Competitor(name=comp_name, description=f"Tracked by {user.company_name}")
+            db.session.add(global_comp)
+            db.session.flush() # get ID
+        
+        # Ensure at least one website source exists
+        if comp_url:
+            source = Source.query.filter_by(competitor_id=global_comp.id, url=comp_url).first()
+            if not source:
+                source = Source(competitor_id=global_comp.id, url=comp_url, label="Homepage", source_type="website")
+                db.session.add(source)
+                db.session.flush()
+            
+            # ── Trigger Initial Scans ──
+            try:
+                # 1. Scrape Website
+                scrape_source_task.delay(source.id)
+                # 2. OSINT Fusion Signals
+                collect_tavily_signals_task.delay(user.id, comp_name)
+                collect_reddit_signals_task.delay(user.id, comp_name)
+                collect_hiring_signals_task.delay(user.id, comp_name)
+                logger.info(f"Triggered initial activation for {comp_name}")
+            except Exception as e:
+                logger.error(f"Failed to queue initial scan for {comp_name}: {e}")
         
     db.session.commit()
     return jsonify({"success": True})

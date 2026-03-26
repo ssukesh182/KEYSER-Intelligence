@@ -26,6 +26,7 @@ SCRAPER_TIMEOUT_MS      = int(os.getenv("SCRAPER_TIMEOUT_MS", 30000))
 
 # ─── External APIs (Phase 2) ─────────────────────────────────
 TAVILY_API_KEY = os.getenv("TAVILY_API_KEY", "")
+SERPAPI_KEY    = os.getenv("SERPAPI_KEY", os.getenv("SERP_API_KEY", os.getenv("VITE_SERP_API_KEY", "")))
 
 # ─── Redis + Celery (Phase 2) ─────────────────────────────────
 REDIS_URL          = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0")

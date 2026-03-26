@@ -24,9 +24,7 @@ logger = logging.getLogger(__name__)
 
 # ── Dimension names shown in the UI ────────────────────────────────────────
 DIMENSIONS = ["speed", "range", "price", "experience", "support", "sustainability"]
-
-# ── Competitors to analyse ─────────────────────────────────────────────────
-TRACKED_COMPETITORS = ["Zepto", "Swiggy", "Blinkit"]
+# Note: competitors are dynamically sourced from the authenticated user's profile (no static list)
 
 
 def fetch_tavily_validation(angle_title: str) -> str:
@@ -56,13 +54,15 @@ def _get_snapshots_for_competitor(user_id, competitor_name) -> list[str]:
     """Fetch recent snapshots for this user's competitor."""
     from models.snapshot import Snapshot
     from models.source import Source
+    from models.competitor import Competitor
     # We need to find the Source for this user/competitor
     # For now, we search all snapshots with this competitor name
     # In a full system, Source would also be user_scoped
     snapshots = (
         db.session.query(Snapshot)
         .join(Source)
-        .filter(Source.competitor_name == competitor_name)
+        .join(Competitor)
+        .filter(Competitor.name == competitor_name)
         .order_by(Snapshot.scraped_at.desc())
         .limit(10)
         .all()

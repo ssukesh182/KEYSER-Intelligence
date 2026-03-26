@@ -1,7 +1,59 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 
-// ... constants and helpers ...
+const DIMENSIONS = ['speed', 'range', 'price', 'experience', 'support', 'sustainability'];
+const DIM_LABELS  = {
+  speed:          'Speed',
+  range:          'Range',
+  price:          'Price',
+  experience:     'Experience',
+  support:        'Support',
+  sustainability: 'Eco',
+};
+
+// Radar geometry: 6 axes, evenly spread
+const CX = 250, CY = 250, R_MAX = 190;
+const ANGLES = DIMENSIONS.map((_, i) => (Math.PI * 2 * i) / DIMENSIONS.length - Math.PI / 2);
+
+function radarPoint(score, axisIndex) {
+  const r = (score / 100) * R_MAX;
+  return {
+    x: CX + r * Math.cos(ANGLES[axisIndex]),
+    y: CY + r * Math.sin(ANGLES[axisIndex]),
+  };
+}
+
+function buildPolygon(scores) {
+  return DIMENSIONS.map((dim, i) => {
+    const { x, y } = radarPoint(scores[dim] ?? 5, i);
+    return `${x},${y}`;
+  }).join(' ');
+}
+
+function axisEnd(i) {
+  return {
+    x: CX + R_MAX * Math.cos(ANGLES[i]),
+    y: CY + R_MAX * Math.sin(ANGLES[i]),
+  };
+}
+
+const TAG_COLORS = {
+  'SPEED WHITESPACE': 'bg-blue-100 text-blue-700',
+  'CATEGORY GAP':     'bg-purple-100 text-purple-700',
+  'VALUE SIGNAL':     'bg-green-100 text-green-700',
+  'UX OPPORTUNITY':   'bg-indigo-100 text-indigo-700',
+  'CRITICAL RISK':    'bg-red-100 text-red-700',
+  'EMERGENT TREND':   'bg-amber-100 text-amber-700',
+};
+
+const BORDER_COLORS = {
+  'SPEED WHITESPACE': 'border-blue-400',
+  'CATEGORY GAP':     'border-purple-400',
+  'VALUE SIGNAL':     'border-green-400',
+  'UX OPPORTUNITY':   'border-indigo-400',
+  'CRITICAL RISK':    'border-red-400',
+  'EMERGENT TREND':   'border-amber-400',
+};
 
 export default function WhitespaceRadar() {
   const { currentUser, profile } = useAuth();
@@ -45,8 +97,8 @@ export default function WhitespaceRadar() {
     fetchData();
   }, [fetchData]);
 
-  const trackedCompetitors = profile?.tracked_competitors || [];
-  const activeComp = trackedCompetitors.find(c => c.name === activeTab) || trackedCompetitors[0];
+  const competitors = profile?.competitors || [];
+  const activeComp = competitors.find(c => c === activeTab) || competitors[0];
   const activeScores = scores[activeTab] || (activeComp ? { speed: 50, range: 50, price: 50, experience: 50, support: 50, sustainability: 50 } : {});
   const polyPoints = activeComp ? buildPolygon(activeScores) : "";
 
@@ -72,15 +124,17 @@ export default function WhitespaceRadar() {
         </div>
 
         {/* Competitor tabs */}
-        <div className="flex items-center gap-3 mb-8">
-          {COMPETITORS.map((c) => (
-            <button key={c.id} onClick={() => setActiveTab(c.id)}
+        <div className="flex items-center gap-3 mb-8 flex-wrap">
+          {competitors.length > 0 ? competitors.map((c) => (
+            <button key={c} onClick={() => setActiveTab(c)}
               className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all duration-200
-                ${activeTab === c.id ? 'bg-primary text-white shadow-md scale-105' 
+                ${activeTab === c ? 'bg-primary text-white shadow-md scale-105' 
                   : 'bg-white text-on-surface-variant border border-outline-variant/30 hover:border-primary/30 hover:text-primary'}`}>
-              {c.name}
+              {c}
             </button>
-          ))}
+          )) : (
+            <span className="text-sm text-on-surface-variant font-bold">No competitors tracked. Complete onboarding.</span>
+          )}
           {loading && <span className="text-xs text-primary/50 animate-pulse ml-2">Fetching live data…</span>}
           {lastUpdated && !loading && (
             <span className="text-[10px] text-on-surface-variant/50 ml-2">Updated {lastUpdated}</span>

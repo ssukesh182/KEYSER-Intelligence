@@ -31,10 +31,8 @@ class FusionPipeline:
         diffs_text = "\n".join([f"- {d.title}: {d.summary}" for d in recent_diffs])
 
         # 2. Fetch Reviews (Reddit & Trustpilot)
-        # Note: fetch_reddit_reviews in source_reviews.py currently uses its own internal filter,
-        # but we'll use the competitor name in the fusion prompt to guide the AI.
-        reddit_raw = fetch_reddit_reviews()
-        tp_raw = fetch_trustpilot_reviews()
+        reddit_raw = fetch_reddit_reviews(competitors=[competitor.name])
+        tp_raw = fetch_trustpilot_reviews(competitors=[competitor.name])
 
         # Filter and format reviews for this competitor
         comp_name_low = competitor.name.lower()
