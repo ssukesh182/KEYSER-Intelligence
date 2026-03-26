@@ -6,21 +6,19 @@
 
 > Stop reading about your competitors. Start understanding them.
 
-[Features](#features) • [Architecture](#architecture) • [Installation](#installation--setup) • [Technical Deep Dive](#technical-deep-dive) • [Challenges](#development-challenges)
-
 ---
 
 ## 📋 Table of Contents
 
 - [Overview](#overview)
-- [Features](#features)
-- [Architecture](#architecture)
-- [Technical Deep Dive](#technical-deep-dive)
-- [Installation & Setup](#installation--setup)
-- [Development Challenges](#development-challenges)
-- [Performance](#performance)
-- [Security](#security)
-- [Roadmap](#roadmap)
+- [Features](#-features)
+- [Architecture](#%EF%B8%8F-architecture)
+- [Technical Deep Dive](#-technical-deep-dive)
+- [Installation & Setup](#-installation--setup)
+- [Development Challenges](#-development-challenges)
+- [Performance](#-performance)
+- [Security](#-security)
+- [Roadmap](#%EF%B8%8F-roadmap)
 
 ---
 
@@ -45,6 +43,7 @@ The platform was built around one core insight: tools like Similarweb tell you *
 ### 🕵️ Whitespace Radar
 
 **The core intelligence engine.**
+<img width="1280" height="789" alt="image" src="https://github.com/user-attachments/assets/cdeda717-d8cf-4130-976c-0fd00bbc2854" />
 
 Challenge: Translating raw, unstructured competitor data from five different source types into a single actionable "where should I position next?" answer.
 
@@ -113,6 +112,7 @@ def classify_change(old_snapshot: str, new_snapshot: str) -> str:
 ```
 
 #### Google Ads Intelligence
+<img width="1280" height="760" alt="image" src="https://github.com/user-attachments/assets/3d2fa9cc-4a5c-4c63-a7ef-c1cef7c32749" />
 
 - SerpAPI integration monitoring competitor ad copy, campaign angles, and keyword targeting
 - Extracts headlines, descriptions, display URLs, and CTA patterns per competitor
@@ -120,6 +120,7 @@ def classify_change(old_snapshot: str, new_snapshot: str) -> str:
 - Surfaces emerging campaign angles before they dominate the SERP
 
 #### Reddit / Social Pulse
+<img width="1280" height="767" alt="image" src="https://github.com/user-attachments/assets/658cc21d-eca7-4aea-a0c3-583634dee84f" />
 
 - Reddit API wrapper fetching posts and comments mentioning competitor brand names
 - Extracts unstructured customer pain points — what real users complain about publicly
@@ -127,6 +128,7 @@ def classify_change(old_snapshot: str, new_snapshot: str) -> str:
 - Useful for finding product gaps: if 15 Reddit posts this month mention a competitor's "broken API documentation," that's a category gap you can own
 
 #### Hiring Intent Tracking
+<img width="1280" height="773" alt="image" src="https://github.com/user-attachments/assets/acea4664-b4e7-4c07-8f0b-9b971073a8c1" />
 
 - Live job posting interception from competitor career pages
 - Departmental surge detection — a cluster of ML engineering hires signals an AI initiative 3–6 months before it ships
@@ -160,6 +162,7 @@ def classify_hiring_signal(job_title: str, job_description: str) -> dict:
 ---
 
 ### 🤖 AI Copilot — Streaming Chat Interface
+<img width="700" height="700" alt="image" src="https://github.com/user-attachments/assets/fb564ef1-dfda-4ac7-9d12-e30b7b779fa0" />
 
 Challenge: Founders need to ask ad-hoc strategic questions against their competitor data — not just read pre-generated reports.
 
@@ -223,6 +226,7 @@ def stream_chat():
 ---
 
 ### 🧠 AI-Powered Competitor Discovery
+<img width="1600" height="1369" alt="image" src="https://github.com/user-attachments/assets/b103e7bb-beb2-445e-b4f2-bee853963978" />
 
 Challenge: Founders shouldn't need to know their competitors before using the platform. The platform should surface them.
 
