@@ -121,7 +121,7 @@ export default function AuthPage({ onLogin }) {
 
         {/* Footer note */}
         <p className="text-center text-[11px] text-on-surface-variant/40 font-body mt-6 uppercase tracking-widest">
-          © 2024 KEYSER Intelligence · Sovereign Framework
+          © 2026 KEYSER Intelligence · Sovereign Framework
         </p>
       </div>
     </div>

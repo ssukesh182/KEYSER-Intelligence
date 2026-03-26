@@ -81,17 +81,20 @@ export default function WhitespaceRadar() {
         setLastUpdated(new Date().toLocaleTimeString());
         
         // Pick first competitor as active if none selected
-        if (!activeTab && json.data.scores) {
-          const first = Object.keys(json.data.scores)[0];
-          if (first) setActiveTab(first);
-        }
+        setActiveTab(prev => {
+          if (!prev && json.data.scores) {
+            const first = Object.keys(json.data.scores)[0];
+            if (first) return first;
+          }
+          return prev;
+        });
       }
     } catch (e) {
       setError(e.message);
     } finally {
       setLoading(false);
     }
-  }, [currentUser, activeTab]);
+  }, [currentUser]);
 
   useEffect(() => {
     fetchData();

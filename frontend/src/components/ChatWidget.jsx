@@ -51,7 +51,25 @@ function CopilotCard({ data }) {
   );
 }
 
+function AnimatedMessage({ text }) {
+  const [displayed, setDisplayed] = useState('');
+
+  useEffect(() => {
+    let i = 0;
+    const timer = setInterval(() => {
+      i += 3; // speed up typing
+      setDisplayed(text.slice(0, i));
+      if (i >= text.length) clearInterval(timer);
+    }, 15);
+    return () => clearInterval(timer);
+  }, [text]);
+
+  return <span className="whitespace-pre-wrap">{displayed}</span>;
+}
+
 export default function ChatWidget({ open, onClose }) {
+  // ...
+
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
@@ -157,7 +175,7 @@ export default function ChatWidget({ open, onClose }) {
                 ? 'bg-primary text-white rounded-tr-sm'
                 : 'bg-white text-on-surface border border-primary/5 rounded-tl-sm'
             }`}>
-              {m.type === 'card' ? <CopilotCard data={m.data} /> : m.text}
+              {m.type === 'card' ? <CopilotCard data={m.data} /> : (m.role === 'assistant' ? <AnimatedMessage text={m.text} /> : m.text)}
             </div>
           </div>
         ))}

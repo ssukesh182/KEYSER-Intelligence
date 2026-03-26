@@ -8,9 +8,9 @@ export default function LandingPage({ onEnter, onNavigate }) {
 <div className="flex items-center gap-12">
 <span className="text-xl font-black text-[#09152e] uppercase tracking-widest">KEYSER Intelligence</span>
 <div className="hidden md:flex items-center gap-8">
-<a className="text-[#C9A227] font-bold border-b-2 border-[#C9A227] pb-1 font-['Manrope'] tracking-tight" href="#">Zepto</a>
-<a className="text-[#1F2A44]/70 hover:text-[#09152e] transition-colors duration-300 font-['Manrope'] font-bold tracking-tight" href="#">Swiggy</a>
-<a className="text-[#1F2A44]/70 hover:text-[#09152e] transition-colors duration-300 font-['Manrope'] font-bold tracking-tight" href="#">Blinkit</a>
+<a className="text-[#C9A227] font-bold border-b-2 border-[#C9A227] pb-1 font-['Manrope'] tracking-tight" href="#">Overview</a>
+<a className="text-[#1F2A44]/70 hover:text-[#09152e] transition-colors duration-300 font-['Manrope'] font-bold tracking-tight" href="#">Features</a>
+<a className="text-[#1F2A44]/70 hover:text-[#09152e] transition-colors duration-300 font-['Manrope'] font-bold tracking-tight" href="#">Pricing</a>
 </div>
 </div>
 <div className="flex items-center gap-4">
@@ -57,7 +57,7 @@ export default function LandingPage({ onEnter, onNavigate }) {
 <div className="text-sm uppercase tracking-widest text-on-surface-variant/60 font-semibold mt-1">Analysis Speed</div>
 </div>
 <div>
-<div className="text-3xl font-extrabold text-primary">95% Accuracy</div>
+<div className="text-3xl font-extrabold text-primary whitespace-nowrap">95% Accuracy</div>
 <div className="text-sm uppercase tracking-widest text-on-surface-variant/60 font-semibold mt-1">AI Validation</div>
 </div>
 </div>
@@ -79,7 +79,7 @@ export default function LandingPage({ onEnter, onNavigate }) {
 </div>
 </div>
 <p className="text-xs text-on-surface-variant leading-relaxed mb-3">
-                        Competitor "Zepto" updated pricing structure in 14 regional hubs.
+                        Competitor "Alpha" updated pricing structure in 14 regional hubs.
                     </p>
 <div className="h-1 w-full bg-surface-container rounded-full overflow-hidden">
 <div className="h-full bg-tertiary-fixed-dim w-3/4"></div>
