@@ -13,13 +13,15 @@ bp = Blueprint("ads", __name__, url_prefix="/api/ads")
 def get_ads():
     user = g.user
     existing = RawAd.query.filter_by(user_id=user.id).all()
+    existing_comp_names = {ad.competitor_name for ad in existing}
     
-    if not existing:
-        # Initial fetch
-        user_comps = UserCompetitor.query.filter_by(user_id=user.id).all()
+    user_comps = UserCompetitor.query.filter_by(user_id=user.id).all()
+    missing_comps = [c for c in user_comps if c.competitor_name not in existing_comp_names]
+    
+    if missing_comps:
         api_key = os.environ.get("SERPAPI_KEY", os.environ.get("VITE_SERP_API_KEY", ""))
         
-        for c in user_comps:
+        for c in missing_comps:
             cat = user.category or ""
             query = f"{c.competitor_name} {cat} ads".strip()
             params = {
@@ -45,8 +47,9 @@ def get_ads():
                         source_link=item.get("link")
                     )
                     db.session.add(ad)
-            except:
-                pass
+            except Exception as e:
+                print(f"[ADS ROUTE] Error fetching ads for {c.competitor_name}: {e}")
+                
         db.session.commit()
         existing = RawAd.query.filter_by(user_id=user.id).all()
 
